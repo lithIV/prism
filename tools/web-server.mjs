@@ -70,6 +70,14 @@ const server = createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server, path: "/ws" });
+// A busy port is a normal thing to hit: say so plainly instead of a stack trace.
+const busy = error => {
+ if (error?.code !== "EADDRINUSE") throw error;
+ console.error(`\n  Port ${PORT} is already in use — another Prism web is probably running.\n  Stop it, or start this one elsewhere:  prism web --port ${PORT + 1}\n`);
+ process.exit(1);
+};
+server.on("error", busy);
+wss.on("error", busy);
 wss.on("connection", ws => {
  const data = { id: ++connections };
  data.send = (channel, ...eventArgs) => { try { ws.send(JSON.stringify({ t: "event", channel, args: eventArgs })); } catch {} };
