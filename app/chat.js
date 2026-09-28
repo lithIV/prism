@@ -404,6 +404,8 @@ class Chat {
   conv.extraSystem = 'You are a subagent: the main agent handed you one task to complete autonomously. Work with your tools until it is done or you are certain it cannot be, then reply with a short, factual report of what you did, what you found and anything the main agent must know. You cannot ask the user questions; if something would need approval it is refused, so work around it and say so in the report.';
   this.conversations.set(record.id, conv);
   this.attach(conv);
+  // Subagents are hidden from the chat list, so the Runs tab is where they are watched.
+  window.ParallelRuns?.add({ id: record.id, title: String(label || promptText).slice(0, 80), model: I18n.t('runs.subagent'), status: 'running', snippet: '' });
   const done = new Promise(resolve => { conv.awaitDone = resolve; });
   this.run(conv, { text: promptText, attachments: [] }, this.config(parent), null);
   this.onChange();

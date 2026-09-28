@@ -8321,7 +8321,7 @@ h6.md-h {
 .parallel-run:disabled{opacity:.4;cursor:default}
 
 /* Prism: the Runs tab */
-.browser-runs{overflow-y:auto;scrollbar-width:thin}
+.browser-runs{background:var(--chat-bg);overflow-y:auto;scrollbar-width:thin}
 .runs-list{display:flex;flex-direction:column;gap:6px;padding:12px}
 .runs-empty{color:var(--fg-tertiary);font-size:12.5px;padding:18px;text-align:center;line-height:1.6}
 .run-item{display:flex;flex-direction:column;gap:4px;text-align:left;border:1px solid rgba(var(--fg-rgb),.07);border-radius:10px;background:rgba(var(--fg-rgb),.02);padding:9px 10px;cursor:pointer;font:inherit}

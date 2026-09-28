@@ -163,6 +163,7 @@ const STRINGS = {
   'parallel.run': 'Run',
   'parallel.runCount': 'Run on {count}',
   'runs.title': 'Runs',
+  'runs.subagent': 'subagent',
   'runs.empty': 'No parallel runs yet. The button with the two columns in the composer starts one.',
   'runs.running': 'running',
   'runs.completed': 'completed',
