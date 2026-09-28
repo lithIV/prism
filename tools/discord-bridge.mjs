@@ -284,7 +284,7 @@ if (ONCE) {
   }
  })();
 } else if (!config.token || !config.userId) {
- console.error(`\n  The Discord bot is not set up yet. Add a bot token and your user id in Prism:\n  Settings -> Interface -> Discord notifications (the same bot is used here),\n  or edit ${configFile} by hand:\n\n  { "token": "…", "userId": "…", "enabled": true }\n\n  Create the bot at https://discord.com/developers (New Application -> Bot), enable\n  "Message Content Intent" on the Bot page, then DM it from your phone.\n`);
+ console.error(`\n  The Discord bot is not set up yet. Add a bot token and your user id in Prism:\n  Settings -> Interface -> Discord notifications (the same bot is used here),\n  or edit ${configFile} by hand:\n\n  { "token": "…", "userId": "…", "enabled": true }\n\n  Create the bot at https://discord.com/developers (New Application -> Bot), enable\n  "Message Content Intent" on the Bot page, invite it to a private server of yours\n  (OAuth2 -> URL Generator -> scope "bot") so Discord lets it DM you, then DM it.\n`);
  process.exit(1);
 } else {
  (async () => {
