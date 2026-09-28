@@ -53,6 +53,10 @@ visible in the settings row, with the server's last error.
   (markdown renders, code shows as code) and **Download** under the same name.
 - **Discord notifications** — optional: paste a bot token and your user id and a bot DMs
   you when a chat finishes, with the outcome and a short summary. Settings → Interface.
+- **More tools** — the agent can look at your screen (`screenshot`), read and write the
+  clipboard, send full HTTP requests with method, headers and body, open files and folders
+  for you, show a desktop notification, and wait between checks. A screenshot needs a model
+  that can see pictures (GPT, Grok, Muse Spark, Qwen3.8 Flash, DeepSeek V4 Flash Vision).
 - **`prism discord`** — the same bot also answers DMs, so you can talk to Prism from your
   phone on any network; see below.
 - **Long chats stay light** — a chat opens with only its newest part drawn; older messages

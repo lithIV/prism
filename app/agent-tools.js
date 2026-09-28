@@ -172,6 +172,28 @@ const SCHEMAS = [
   url: { type: 'string', description: 'For new: what to open in it' },
   tab: { type: 'integer', description: 'For switch and close: the tab number from the list' },
  }, ['action']),
+ fn('screenshot', 'Look at the screen: takes a picture of the whole desktop and shows it to you as a picture. Use it when the user asks about something on their screen, an app or a game, or when words are not enough to see what is going on.', {}, []),
+ fn('clipboard', 'Read the system clipboard, or write text into it. action is "read" or "write"; pass text when writing. Use it to move something the user copied, or to put a result where they can paste it.', {
+  action: { type: 'string', description: 'read or write' },
+  text: { type: 'string', description: 'The text to put on the clipboard when writing' },
+ }, ['action']),
+ fn('http_request', 'Make an HTTP request and read the response: method, headers and body are yours to set. Use it for APIs, POST/PUT/PATCH/DELETE, auth headers and JSON bodies; fetch_url is the quick way to read a page.', {
+  url: { type: 'string', description: 'The http or https address' },
+  method: { type: 'string', description: 'GET, POST, PUT, PATCH, DELETE or HEAD; GET by default' },
+  headers: { type: 'object', description: 'Request headers as an object' },
+  body: { type: 'string', description: 'The request body, usually JSON as a string' },
+  timeout: { type: 'integer', description: 'Seconds before the request is stopped, 30 at most' },
+ }, ['url']),
+ fn('open_path', 'Open a file or folder on the user\'s computer in its default app: Explorer, a browser, an editor, a video player. Use it to show the user a result.', {
+  path: { type: 'string', description: 'File or folder, relative to the project folder or absolute' },
+ }, ['path']),
+ fn('notify', 'Show a desktop notification on the user\'s computer, for when they asked to be told something or a long job is done.', {
+  title: { type: 'string', description: 'Notification title' },
+  text: { type: 'string', description: 'Notification body' },
+ }, ['text']),
+ fn('wait', 'Wait a number of seconds, 60 at most, before checking something again: a build, a download, a server that is starting.', {
+  seconds: { type: 'integer', description: 'Seconds to wait' },
+ }, ['seconds']),
 ];
 
 const BROWSER_FREE = new Set(['browser_snapshot', 'browser_screenshot', 'browser_read', 'browser_wait', 'browser_scroll']);
@@ -268,7 +290,7 @@ function browserApproval(name, args, ask) {
 function needsApproval(name, args, { mode, cwd }) {
  if (mode === 'full') return false;
  if (mcpAuto.has(name)) return false;
- if (name === 'memory_save' || name === 'memory_forget' || name === 'ask_user' || name === 'subagent') return false;
+ if (name === 'memory_save' || name === 'memory_forget' || name === 'ask_user' || name === 'subagent' || name === 'notify' || name === 'wait') return false;
  const ask = mode !== 'auto';
  if (name.startsWith('browser_')) return browserApproval(name, args, ask);
  switch (name) {
@@ -279,6 +301,10 @@ function needsApproval(name, args, { mode, cwd }) {
   case 'video_frames': return (ask && !inside(cwd, args.path)) || (!!args.save_to && (ask || !inside(cwd, args.save_to)));
   case 'run_powershell': return ask || riskyShell(args.command, cwd);
   case 'git': return !readOnlyGit(args.args) && (ask || riskyGit(args.args));
+  case 'screenshot':
+  case 'clipboard':
+  case 'http_request':
+  case 'open_path': return ask;
   case 'web_search':
   case 'fetch_url': return ask;
   default: return true;
@@ -305,6 +331,10 @@ function describe(name, args, cwd) {
    : { kind: 'file', title: I18n.t('approve.video'), path };
   case 'subagent': return { kind: 'command', title: I18n.t('subagent.title'), code: String(args.description || '') };
   case 'ask_user': return { kind: 'command', title: I18n.t('ask.title'), code: String(args.question || '') };
+  case 'screenshot': return { kind: 'command', title: I18n.t('approve.screenshot'), code: '' };
+  case 'clipboard': return { kind: 'command', title: I18n.t(String(args.action || '').toLowerCase() === 'write' ? 'approve.clipboardWrite' : 'approve.clipboardRead'), code: String(args.text || '').slice(0, 200) };
+  case 'http_request': return { kind: 'web', title: I18n.t('approve.http'), url: `${String(args.method || 'GET').toUpperCase()} ${String(args.url || '')}` };
+  case 'open_path': return { kind: 'file', title: I18n.t('approve.open'), path };
   case 'memory_save': return { kind: 'command', title: I18n.t('memory.save'), code: String(args.text || '') };
   case 'memory_forget': return { kind: 'command', title: I18n.t('memory.forget'), code: String(args.id || args.text || '') };
   case 'web_search': return { kind: 'web', title: I18n.t('approve.search'), text: String(args.query || '') };
@@ -459,6 +489,12 @@ function format(name, args, result) {
   case 'edit_file': return `Edited ${result.path}, ${result.replaced} ${result.replaced === 1 ? 'place' : 'places'} changed`;
   case 'list_files': return `${result.path}\n${result.text || '(empty folder)'}${result.more ? '\n[More entries not shown. List a subfolder.]' : ''}`;
   case 'video_frames': return frames(result);
+  case 'screenshot': return { text: `A picture of the screen (${result.screen || 'captured'}), saved to ${result.path}. It follows as a picture.`, images: [{ label: result.path, url: result.image }] };
+  case 'clipboard': return result.text || '';
+  case 'http_request': return `${result.status ?? '?'} ${result.type || ''} (${result.size || '?'})\n${result.headers ? `${result.headers}\n` : ''}${result.text ?? '(the body is not text)'}${result.cut ? '\n[Cut here.]' : ''}`;
+  case 'open_path':
+  case 'notify':
+  case 'wait': return result.text || '';
   default: return JSON.stringify(result);
  }
 }

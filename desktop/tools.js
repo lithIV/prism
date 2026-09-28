@@ -4,7 +4,7 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { net } = require('electron');
+const { net, clipboard, shell: electronShell, Notification } = require('electron');
 const Media = require('./media');
 const Browser = require('./browser');
 
@@ -327,6 +327,118 @@ function videoFrames(id, { path: file, count, start, end, times, save_to: saveTo
  return cancellable(id, signal => Media.frames(full, { count, start, end, times, saveTo: folder }, signal));
 }
 
+// A picture of the whole screen, so the model can look at what the user sees. ffmpeg does the
+// capture when it is installed (fast, and nothing for antivirus to flag); PowerShell is the fallback.
+async function screenshot(id, {}, cwd) {
+ const file = path.join(os.tmpdir(), `prism-screenshot-${Date.now().toString(36)}.jpg`);
+ const ffmpeg = await new Promise(resolve => {
+  const child = spawn('ffmpeg', ['-y', '-f', 'gdigrab', '-i', 'desktop', '-frames:v', '1', '-update', '1', '-vf', "scale='min(1600,iw)':-2", '-q:v', '3', file], { windowsHide: true, env: ENV });
+  let noise = '';
+  child.stdout.on('data', chunk => { noise += chunk; });
+  child.stderr.on('data', chunk => { noise += chunk; });
+  child.on('error', () => resolve({ missing: true }));
+  child.on('close', code => resolve({ code, noise }));
+  if (id) jobs.set(id, () => child.kill());
+ });
+ let screen = '';
+ if (!ffmpeg.missing) {
+  if (ffmpeg.code !== 0) return { error: `The screenshot failed: ${ffmpeg.noise.split('\n').filter(Boolean).slice(-2).join(' ')}` };
+  const size = /(\d{2,5})x(\d{2,5})/.exec(ffmpeg.noise);
+  screen = size ? `${size[1]}x${size[2]}` : 'the desktop';
+ } else {
+  // No ffmpeg: draw the screen with .NET. No P/Invoke here — antivirus tools flag that pattern.
+  const script = [
+   "Add-Type -AssemblyName System.Windows.Forms, System.Drawing",
+   "$b = [System.Windows.Forms.SystemInformation]::VirtualScreen",
+   "$full = New-Object System.Drawing.Bitmap $b.Width, $b.Height",
+   "$g = [System.Drawing.Graphics]::FromImage($full)",
+   "$g.CopyFromScreen($b.Left, $b.Top, 0, 0, $full.Size)",
+   "$k = [Math]::Min(1.0, 1600.0 / [Math]::Max($b.Width, $b.Height))",
+   "$w = [int][Math]::Round($b.Width * $k); $h = [int][Math]::Round($b.Height * $k)",
+   "$small = New-Object System.Drawing.Bitmap $w, $h",
+   "$sg = [System.Drawing.Graphics]::FromImage($small)",
+   "$sg.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic",
+   "$sg.DrawImage($full, 0, 0, $w, $h)",
+   "$codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' } | Select-Object -First 1",
+   "$options = New-Object System.Drawing.Imaging.EncoderParameters 1",
+   "$options.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality), 85",
+   `$small.Save('${file.replace(/'/g, "''")}', $codec, $options)`,
+   "$sg.Dispose(); $small.Dispose(); $g.Dispose(); $full.Dispose()",
+   'Write-Output "$($b.Width)x$($b.Height) -> $($w)x$($h)"',
+  ].join("\n");
+  const shot = await runShell(id, { command: script, timeout: 30 }, cwd);
+  if (shot.code !== 0) return { error: `The screenshot failed: ${shot.output || 'unknown error'}` };
+  screen = String(shot.output || '').trim();
+ }
+ const stat = await fs.promises.stat(file).catch(() => null);
+ if (!stat?.size) return { error: 'The screenshot file was not written' };
+ const image = `data:image/jpeg;base64,${(await fs.promises.readFile(file)).toString('base64')}`;
+ return { path: file, image, size: formatSize(stat.size), screen };
+}
+
+// The system clipboard, for moving text between the user and the model.
+async function clipboardTool(id, { action, text }) {
+ if (String(action || '').toLowerCase() === 'write') {
+  const value = String(text ?? '');
+  clipboard.writeText(value);
+  return { text: `Copied ${value.length} characters to the clipboard.` };
+ }
+ // Some Electron versions hand back a promise here, older ones a string.
+ const current = String((await clipboard.readText()) ?? '');
+ if (!current) return { text: '(the clipboard is empty)' };
+ return { text: `Clipboard holds ${current.length} characters:\n${current.length > 4000 ? `${current.slice(0, 4000)}\n[Cut here.]` : current}` };
+}
+
+// Any HTTP request, for APIs and POST/PUT work fetch_url does not cover.
+async function httpRequest(id, { url, method = 'GET', headers, body, timeout }, cwd) {
+ let address;
+ try { address = new URL(String(url || '').trim()); } catch { return { error: `Not a valid address: ${url}` }; }
+ if (address.protocol !== 'http:' && address.protocol !== 'https:') return { error: 'Only http and https addresses can be opened' };
+ const verb = String(method || 'GET').toUpperCase();
+ const controller = new AbortController();
+ const seconds = Math.min(TIMEOUT.fetch, Math.max(1, Number(timeout) || TIMEOUT.fetch));
+ const timer = setTimeout(() => controller.abort(), seconds * 1000);
+ if (id) jobs.set(id, () => controller.abort());
+ try {
+  const response = await net.fetch(address.href, {
+   method: verb,
+   headers: { 'User-Agent': UA, ...(headers && typeof headers === 'object' ? headers : {}) },
+   body: body === undefined || body === null || verb === 'GET' || verb === 'HEAD' ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)),
+   signal: controller.signal,
+   redirect: 'follow',
+  });
+  const type = response.headers.get('content-type') || '';
+  const { bytes, cut: shortened } = await readBody(response, FETCH_BYTES);
+  const charset = /charset=["']?([\w-]+)/i.exec(type)?.[1]?.toLowerCase() || 'utf-8';
+  const textual = !type || /^(text\/|application\/([\w.+-]*\+)?(json|xml|javascript|x-javascript|ecmascript))/i.test(type);
+  const shown = [...response.headers].filter(([name]) => /^(content-type|location|retry-after|www-authenticate|x-)/i.test(name)).slice(0, 12).map(([name, value]) => `${name}: ${value}`).join('\n');
+  return { status: response.status, url: response.url || address.href, type, size: formatSize(bytes.length), cut: shortened, headers: shown, text: textual ? decode(bytes, charset) : null };
+ } catch (error) {
+  return { error: controller.signal.aborted ? 'The request did not finish in time or was stopped' : `The request failed: ${error.message}` };
+ } finally {
+  clearTimeout(timer);
+  jobs.delete(id);
+ }
+}
+
+// Opens a file or folder in whatever app the user has for it.
+async function openPathTool(id, { path: file }, cwd) {
+ const full = resolvePath(cwd, file);
+ const failure = await electronShell.openPath(full);
+ return failure ? { error: `Could not open ${full}: ${failure}` } : { path: full, text: `Opened ${full} in its default app.` };
+}
+
+function notifyTool(id, { title = 'Prism', text }) {
+ try { new Notification({ title: String(title), body: String(text ?? '') }).show(); } catch {}
+ return { text: 'Notification shown.' };
+}
+
+async function waitTool(id, { seconds }) {
+ const value = Math.min(60, Math.max(0.5, Number(seconds) || 1));
+ await new Promise(resolve => setTimeout(resolve, value * 1000));
+ return { text: `Waited ${value} seconds.` };
+}
+
 const TOOLS = {
  run_powershell: runShell,
  read_file: readFile,
@@ -336,6 +448,12 @@ const TOOLS = {
  list_files: listFiles,
  git: runGit,
  fetch_url: fetchUrl,
+ screenshot,
+ clipboard: clipboardTool,
+ http_request: httpRequest,
+ open_path: openPathTool,
+ notify: notifyTool,
+ wait: waitTool,
 };
 
 async function runTool(id, name, args, cwd, sender) {

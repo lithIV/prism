@@ -158,14 +158,27 @@ async function turn(prompt, onStatus = () => {}) {
    return result.content?.trim() || "(the model sent an empty reply)";
   }
   state.messages.push({ role: "assistant", content: result.content || "", tool_calls: calls });
+  const pictures = [];
   for (const call of calls) {
    if (state.stopped) return "⏹ stopped";
    let callArgs = {};
    try { callArgs = JSON.parse(call.function.arguments || "{}"); } catch {}
    status(`🔧 ${call.function.name}`);
    let output = "";
-   try { output = String(await AgentTools.run(call.function.name, callArgs, { id: `dc-tool-${call.id}`, cwd: state.folder }) ?? ""); } catch (error) { output = `Error: ${error.message}`; }
+   try {
+    const toolResult = await AgentTools.run(call.function.name, callArgs, { id: `dc-tool-${call.id}`, cwd: state.folder });
+    // Tools can answer with text, or with text plus pictures (a screenshot, an image file).
+    output = typeof toolResult === "string" ? toolResult : String(toolResult?.text ?? JSON.stringify(toolResult ?? ""));
+    if (toolResult?.images?.length) pictures.push(...toolResult.images);
+   } catch (error) {
+    output = `Error: ${error.message}`;
+   }
    state.messages.push({ role: "tool", tool_call_id: call.id, content: output });
+  }
+  if (pictures.length) {
+   const content = [{ type: "text", text: "The pictures from the tools you just ran follow." }];
+   for (const picture of pictures) content.push({ type: "text", text: picture.label }, { type: "image_url", image_url: { url: picture.url } });
+   state.messages.push({ role: "user", content });
   }
  }
  return "(stopped after 12 tool steps)";
