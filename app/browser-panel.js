@@ -374,7 +374,8 @@ class BrowserPanel {
   const tab = { url: 'prism://runs', title: I18n.t('runs.title'), icon: '', loading: false, error: '', view, id: 0, ready: null, el: null, runs: true };
   this.tabs.unshift(tab);
   this.stage.insertBefore(view, this.stage.firstChild);
-  if (!this.active) this.select(tab, { lazy: true });
+  // The runs list is a tab of its own; a blank page, not it, is what opens first.
+  if (!this.active) this.newTab();
   this.render();
   this.syncBar();
  }
