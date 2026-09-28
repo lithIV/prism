@@ -8426,6 +8426,92 @@ h6.md-h {
 /* A model without thinking levels shows no effort button at all. */
 .composer-effort[hidden]{display:none}
 
+/* Phones and narrow windows: the chat fills the screen and the sidebar slides over it. */
+@media (max-width: 820px) {
+ .main,
+ .app.is-sidebar-collapsed .main {
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 16px;
+ }
+
+ .sidebar {
+  z-index: 30;
+  width: min(82vw, 320px);
+  padding: 12px 10px;
+  background: var(--app-bg);
+  transform: translateX(calc(-100% - 16px));
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+ }
+ .app:not(.is-sidebar-collapsed) .sidebar {
+  transform: none;
+  box-shadow: 28px 0 70px rgba(0, 0, 0, 0.55);
+ }
+ /* Dim everything behind the open drawer; a tap on the dim closes it. */
+ .app:not(.is-sidebar-collapsed)::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(0, 0, 0, 0.45);
+ }
+
+ .sidebar-toggle {
+  top: 6px;
+  left: 6px;
+ }
+
+ /* The built-in browser covers the screen while it is open. */
+ .browser {
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  width: auto;
+ }
+ .app.is-browser-open .browser {
+  z-index: 24;
+ }
+
+ /* A roomier composer for touch. */
+ .composer {
+  --composer-side-gap: 10px;
+  padding: 11px 12px 9px;
+ }
+
+ /* Settings take the whole screen, tabs as a strip on top. */
+ .settings {
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+ }
+ .settings-nav {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(var(--fg-rgb), 0.06);
+ }
+ .settings-heading {
+  display: none;
+ }
+ .settings-tab {
+  flex: none;
+ }
+ .settings-page {
+  margin: 0;
+  padding: 12px 14px 24px;
+ }
+}
+
+
 /* Wide settings rows stack: the text on top, the controls on their own line below. */
 .settings-row.is-wide{grid-template-columns:minmax(0,1fr)}
 .settings-row.is-wide .settings-control{grid-column:1;align-items:stretch;margin-top:12px}

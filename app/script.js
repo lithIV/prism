@@ -160,6 +160,16 @@ function setSidebarCollapsed(collapsed) {
   browserPanel?.fit();
 }
 
+// On a phone — the web mode or a narrow window — the sidebar starts closed and slides over the chat.
+const narrowScreen = () => window.matchMedia('(max-width: 820px)').matches;
+if (narrowScreen()) setSidebarCollapsed(true);
+app.addEventListener('click', event => {
+  if (event.target === app && narrowScreen()) setSidebarCollapsed(true);
+});
+sidebar.addEventListener('click', event => {
+  if (narrowScreen() && event.target.closest('.chat-row, .sidebar-new-chat')) setSidebarCollapsed(true);
+});
+
 sidebarToggle.addEventListener('sidebar-toggle', () => {
   setSidebarCollapsed(!app.classList.contains('is-sidebar-collapsed'));
 });
