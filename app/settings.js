@@ -36,7 +36,7 @@ function keyRow(provider) {
     <p class="settings-hint"><span>${escapeHtml(I18n.t(`settings.${provider}.hint`))}</span> <a href="${href}" target="_blank" rel="noopener noreferrer">${host}</a>.${note}</p>
    </div>
    <div class="settings-control">
-    <input id="settings-key-${provider}" class="settings-key" data-provider="${provider}" type="text" placeholder="${provider === 'anthropic' ? 'sk-ant-…' : 'sk-…'}" autocomplete="off" spellcheck="false">
+    <input id="settings-key-${provider}" class="settings-key is-secret" data-provider="${provider}" type="text" placeholder="${provider === 'anthropic' ? 'sk-ant-…' : 'sk-…'}" autocomplete="off" spellcheck="false">
     <p class="settings-status" data-provider="${provider}" role="status"></p>
    </div>
   </div>`;
@@ -311,8 +311,8 @@ class Settings {
   if (!node || !window.openghost?.memory) return;
   let memories = [];
   try { memories = (await window.openghost.memory.list()) || []; } catch {}
-  // Newest first.
-  memories.sort((a, b) => (b.created || 0) - (a.created || 0));
+  // Oldest first: a memory the user adds here lands at the bottom, right above the field.
+  memories.sort((a, b) => (a.created || 0) - (b.created || 0));
   node.innerHTML = `<div class="memory-list">${memories.length
    ? memories.map(item => `<div class="memory-row" data-id="${escapeHtml(item.id)}">
       <div class="memory-body">
@@ -358,6 +358,7 @@ class Settings {
    <div class="settings-control">${choiceHtml}</div>
   </div>`;
   const viewLabels = { auto: I18n.t('settings.effects.auto'), open: I18n.t('settings.effects.open'), closed: I18n.t('settings.effects.closed') };
+  const thinkingLabels = { auto: I18n.t('settings.effects.auto'), extended: I18n.t('settings.effects.extended') };
   const typingLabels = { both: I18n.t('settings.effects.both'), deleting: I18n.t('settings.effects.deleting') };
   const effects = window.Effects;
 let profile = { name: 'default', profiles: ['default'] };
@@ -400,7 +401,7 @@ let profile = { name: 'default', profiles: ['default'] };
    profileBlock,
    discordBlock,
    row('settings.effects.title', 'settings.effects.hint', choice('text', effects ? effects.mode : 'both', ['both', 'deleting'], typingLabels)),
-   row('settings.effects.thinking', 'settings.effects.thinkingHint', choice('thinking', effects ? effects.thinkingMode : 'auto', ['auto', 'open', 'closed'], viewLabels)),
+   row('settings.effects.thinking', 'settings.effects.thinkingHint', choice('thinking', effects ? effects.thinkingMode : 'auto', ['auto', 'extended'], thinkingLabels)),
    row('settings.effects.tools', 'settings.effects.toolsHint', choice('tools', effects ? effects.toolsMode : 'auto', ['auto', 'open', 'closed'], viewLabels)),
   ].join('');
   node.querySelector('[data-discord-save]')?.addEventListener('click', async () => {

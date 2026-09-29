@@ -6672,11 +6672,15 @@ h6.md-h {
   caret-color: var(--fg-primary);
   font-family: var(--mono-font);
   font-size: 13px;
-  -webkit-text-security: disc;
   transition: box-shadow 0.2s ease;
 }
 
-.settings-key:placeholder-shown {
+/* Only the fields that hold a secret (API keys, tokens) hide their text behind discs. */
+.settings-key.is-secret {
+  -webkit-text-security: disc;
+}
+
+.settings-key.is-secret:placeholder-shown {
   -webkit-text-security: none;
 }
 
@@ -8309,6 +8313,10 @@ h6.md-h {
 .message-thinking.is-open .message-thinking-body{grid-template-rows:1fr;opacity:1}
 .message-thinking-inner{min-height:0;overflow:hidden;white-space:pre-wrap;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.42);font-style:italic;scrollbar-width:thin;scrollbar-color:rgba(var(--fg-rgb),0.15) transparent}
 .message-thinking.is-open .message-thinking-inner{max-height:300px;overflow-y:auto}
+/* Extended thinking: the box shows like a terminal log — no header, nothing to fold. */
+.message-thinking.is-extended .message-thinking-head{display:none}
+.message-thinking.is-extended .message-thinking-body{grid-template-rows:1fr;opacity:1}
+.message-thinking.is-extended .message-thinking-inner{max-height:300px;overflow-y:auto}
 
 
 /* Prism: tool bodies use the app's thin scrollbar, like code blocks do */

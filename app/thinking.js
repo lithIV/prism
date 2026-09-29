@@ -29,6 +29,9 @@ class ThinkingView {
    this.touched = true;
    this.setOpen(!this.open);
   });
+  window.addEventListener('effects-changed', event => {
+   if (event.detail?.group === 'thinking' && this.el.isConnected) this.sync();
+  });
   this.sync();
  }
 
@@ -37,8 +40,16 @@ class ThinkingView {
   this.sync();
  }
 
+ get extended() {
+  return window.Effects?.thinkingMode === 'extended';
+ }
+
  sync() {
-  this.el.classList.toggle('is-open', this.open);
+  const extended = this.extended;
+  // Extended: no header, no folding — the reasoning just stays on screen, as in a terminal.
+  this.el.classList.toggle('is-extended', extended);
+  this.head.hidden = extended;
+  this.el.classList.toggle('is-open', extended || this.open);
   this.head.setAttribute('aria-expanded', String(this.open));
   this.name.textContent = I18n.t(this.live ? 'thinking.live' : 'thinking.done');
  }
@@ -47,7 +58,7 @@ class ThinkingView {
   this.live = Boolean(live);
   this.el.hidden = !text;
   this.inner.textContent = text || '';
-  if (live && !this.touched) this.open = window.Effects?.thinkingMode !== 'closed';
+  if (live && !this.touched) this.open = this.extended || window.Effects?.thinkingMode !== 'closed';
   this.sync();
   if (this.open) this.inner.scrollTop = this.inner.scrollHeight;
  }
@@ -55,7 +66,7 @@ class ThinkingView {
  finish() {
   if (this.el.hidden) return;
   this.live = false;
-  if (!this.touched) this.open = window.Effects?.thinkingMode === 'open';
+  if (!this.touched) this.open = this.extended || window.Effects?.thinkingMode === 'open';
   this.sync();
  }
 }
