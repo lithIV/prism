@@ -65,7 +65,7 @@
   --scrollbar-hover-width: 6px;
   --scrollbar-hit-width: 12px;
 
-  --composer-max-width: 680px;
+  --composer-max-width: clamp(680px, 44vw, 900px);
   --composer-side-gap: 24px;
   --composer-bottom-gap: 16px;
   --composer-radius: 24px;
@@ -856,6 +856,50 @@ body {
 .sidebar-footer {
   display: flex;
   margin-top: auto;
+}
+
+/* The handle on the sidebar's right edge; its hairline shows on hover or while dragging. */
+.sidebar-resizer {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.sidebar-resizer::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 44px;
+  margin: -22px 0 0 -1px;
+  border-radius: 1px;
+  background: rgba(var(--fg-rgb), 0.16);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.sidebar-resizer:hover::before,
+.sidebar.is-resizing .sidebar-resizer::before {
+  opacity: 1;
+}
+
+body.is-resizing-sidebar,
+body.is-resizing-sidebar * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* A narrow window slides the sidebar over the chat; a resize handle there would only be in the way. */
+@media (max-width: 820px) {
+  .sidebar-resizer {
+    display: none;
+  }
 }
 
 .sidebar-header {

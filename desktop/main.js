@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Menu, dialog, ipcMain, nativeTheme, shell, Notification } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, nativeTheme, screen, shell, Notification } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const Tools = require('./tools');
@@ -10,6 +10,8 @@ const MCP = require('./mcp');
 const Memory = require('./memory');
 const Instructions = require('./instructions');
 const Discord = require('./discord');
+const Updater = require('./updater');
+const CliCommand = require('./cli-command');
 
 const APP_ID = 'com.prism.app';
 // Profiles: prism --profile work keeps a separate workspace (chats, memory, keys, MCP config).
@@ -27,7 +29,9 @@ const TITLE_BAR = { height: 36, symbolColor: '#9a9a9a' };
 const STORE_KEY = /^[a-z0-9_-]+(\/[a-z0-9_-]+)?$/;
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
-app.setAppUserModelId(APP_ID);
+// Packaged builds claim com.prism.app; a dev run gets its own id so it can never
+// hijack the taskbar identity of the installed app in the shell's caches.
+app.setAppUserModelId(app.isPackaged ? APP_ID : `${APP_ID}.dev`);
 nativeTheme.themeSource = 'dark';
 Menu.setApplicationMenu(null);
 
@@ -39,7 +43,7 @@ function createShortcut() {
   cwd: ROOT,
   icon: ICON,
   iconIndex: 0,
-  appUserModelId: APP_ID,
+  appUserModelId: app.isPackaged ? APP_ID : `${APP_ID}.dev`,
   description: 'Prism',
  });
  console.log(ok ? `Shortcut: ${link}` : 'Could not create the shortcut');
@@ -86,9 +90,15 @@ function external(url) {
 }
 
 function createWindow() {
+ // The window follows the monitor: a little wider and taller than the old fixed 1280×840,
+ // with sensible bounds for very small and very large screens.
+ const { workAreaSize } = screen.getPrimaryDisplay();
+ const width = Math.min(Math.max(Math.round(workAreaSize.width * 0.8), 1280), 1720);
+ const height = Math.min(Math.max(Math.round(workAreaSize.height * 0.88), 800), 1180);
  const win = new BrowserWindow({
-  width: 1280,
-  height: 840,
+  width,
+  height,
+  center: true,
   minWidth: 760,
   minHeight: 540,
   show: false,
@@ -225,7 +235,10 @@ if (process.argv.includes('--create-shortcut')) {
  });
  app.whenReady().then(() => {
   Browser.setup();
+  // Installed builds put the `prism` command in the terminal for the current user.
+  if (CliCommand.install()) console.log('The prism command is now available in terminals');
   win = createWindow();
+  Updater.start();
   MCP.init().catch(() => {});
   win.on('closed', () => {
    win = null;

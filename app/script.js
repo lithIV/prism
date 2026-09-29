@@ -34,6 +34,7 @@ const composerText = new ComposerText(composerInput, document.querySelector('.co
 LinkChip.watch(document.querySelector('.composer-mirror'));
 LinkChip.watch(thread);
 const settings = new Settings(document.querySelector('.settings'));
+new SidebarResizer({ app, sidebar, handle: sidebar.querySelector('.sidebar-resizer') });
 new Scrollbar(document.querySelector('.settings-page'), document.querySelector('.settings-scrollbar')).observe(document.querySelector('.settings-providers'));
 const threadBottom = document.querySelector('.thread-bottom');
 new LiquidGlass(threadBottom, { width: 36, height: 36 });

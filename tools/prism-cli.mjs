@@ -56,8 +56,10 @@ if (command === "--help" || command === "help") {
 }
 
 // default: the desktop app — the installed one when there is one, else Electron from this folder
-const installed = process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, "Programs", "Prism", "Prism.exe") : ""
-if (installed && existsSync(installed)) {
+// (the installed one may also sit right next to this command line, under resources/app)
+const sibling = join(root, "..", "..", "Prism.exe")
+const installed = [process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, "Programs", "Prism", "Prism.exe") : "", sibling].find(file => file && existsSync(file))
+if (installed) {
  const child = spawn(installed, args, { detached: true, stdio: "ignore" })
  child.unref()
  process.exit(0)

@@ -36,19 +36,22 @@ visible in the settings row, with the server's last error.
 
 - **Memory** — the agent saves durable facts (your name, preferences, projects) with its
   `memory_save` tool; they're fed back into every chat and listed in Settings → Memory,
-  newest first, where you can add or forget them too.
+  oldest first with new ones landing at the bottom, where you can add or forget them too.
 - **Profiles** — separate workspaces (chats, memory, keys, MCP config) for different
   accounts. Switch in Settings → Interface → Profile, or launch with `prism --profile work`.
 - **Subagents** — the agent can hand a self-contained job to a background copy of itself
   (`subagent` tool) and use the report when it comes back; several run side by side.
 - **Plan & Build** — the composer switch keeps the agent in Plan (it reads, asks, proposes,
   never writes) until you approve the plan; the `ask_user` tool puts a small
-  multiple-choice question right in the chat.
-- **Instruction files** — the pill next to the folder button attaches one instruction file
-  per folder (AGENTS.md, CLAUDE.md, any `.md`). Every chat in that folder follows it, so
-  switching workspaces no longer means editing AGENTS.md by hand.
-- **Claude skills** — folders under `~/.claude/skills` and `<project>/.claude/skills` with a
-  `SKILL.md` are listed to the agent, which reads and follows them when a task matches.
+  multiple-choice question right in the chat, marks one option **Recommended** and picks it
+  after three minutes if nobody answers.
+- **Instruction files** — the pill beside the folder button attaches one instruction file
+  per folder (AGENTS.md, CLAUDE.md, any `.md`; READMEs and licenses are left out). Its menu
+  also has **Open instructions folder**, which keeps a workspace's agent files together in
+  `<workspace>/.prism` (instructions, skills, MCP notes — created on first use).
+- **Claude skills** — folders under `~/.claude/skills`, `<project>/.claude/skills` and
+  `<project>/.prism/skills` with a `SKILL.md` are listed to the agent, which reads and
+  follows them when a task matches.
 - **File attachments** — files the agent writes show up under its reply with **Preview**
   (markdown renders, code shows as code) and **Download** under the same name.
 - **Discord notifications** — optional: paste a bot token and your user id and a bot DMs
@@ -69,16 +72,29 @@ visible in the settings row, with the server's last error.
 - **Drag to sort** — reorder chats and folders by dragging them. Newest first until you do.
 - **Thinking effort** — Default, Instant, Low, High, Max and Extra high, per model, with the
   level's name above the track growing as the level rises.
+- **Thinking boxes** — two styles in Settings → Interface: the collapsible **Thought** rows,
+  or **Extended**, an always-open reasoning box with no header to fold.
+- **Stop & steer** — while a reply streams, an empty composer turns the send button into
+  **stop**, and anything you type steers the running reply. Select text in one of your older
+  prompts to **Steer**: the chat rewinds to that message and its words go back into the
+  composer for editing.
+- **Window that fits your screen** — the app opens sized to your monitor, the sidebar's edge
+  can be dragged to resize (double-click it to reset), and the chat column widens on big screens.
+- **Updates** — on launch Prism checks this repository's releases and offers to download and
+  install a newer version when there is one.
 - **`prism web`** — see below.
 
 ## prism web
 
 ```sh
-npm link        # once, puts the `prism` command on PATH
 prism web       # serves Prism to the browser, logs activity in the terminal
 prism web --host 0.0.0.0 --port 8787 --profile work   # for a server or another device
 prism import    # bring OpenCode chats over
 ```
+
+The installer puts the `prism` command on PATH by itself on first launch (a small shim in
+the per-user WindowsApps folder; an existing `prism` on PATH is never touched). Working from
+a checkout instead, `npm link` does the same.
 
 The web mode reuses the desktop engines behind an Electron stand-in: tools, models, MCP
 servers and memory all work. Caveats: there is no built-in browser panel (webviews need
