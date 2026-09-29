@@ -4,14 +4,15 @@
 const GAP = 8;
 const EDGE = 8;
 const FADE = 32;
-const SOURCE = '.message.is-assistant .message-content';
+const SOURCE = '.message.is-assistant .message-content, .message.is-user .message-bubble';
 // The buttons under a message hold none of its words.
 const CHROME = '.message-tools, .message-actions';
 
 class SelectionMenu {
- constructor({ onAsk, onMini }) {
+ constructor({ onAsk, onMini, onSteer }) {
   this.onAsk = onAsk;
   this.onMini = onMini;
+  this.onSteer = onSteer;
   this.range = null;
   this.box = null;
   this.text = '';
@@ -22,11 +23,16 @@ class SelectionMenu {
   const el = this.el = document.createElement('div');
   el.className = 'select-menu';
   el.setAttribute('role', 'toolbar');
-  el.innerHTML = `<button type="button" class="select-menu-button" data-action="ask">${Glyphs.quote}<span>${I18n.t('select.ask')}</span></button>`
+  el.innerHTML = `<button type="button" class="select-menu-button" data-action="steer" hidden>${Glyphs.pencil}<span>${I18n.t('select.steer')}</span></button>`
+   + `<button type="button" class="select-menu-button" data-action="ask">${Glyphs.quote}<span>${I18n.t('select.ask')}</span></button>`
    + `<span class="select-menu-divider" aria-hidden="true"></span>`
    + `<button type="button" class="select-menu-button" data-action="mini">${Glyphs.bubble}<span>${I18n.t('select.mini')}</span></button>`;
+  this.steer = el.querySelector('[data-action="steer"]');
+  this.ask = el.querySelector('[data-action="ask"]');
   this.mini = el.querySelector('[data-action="mini"]');
   this.divider = el.querySelector('.select-menu-divider');
+  this.steer.title = I18n.t('select.steerHint');
+  this.steer.setAttribute('aria-label', I18n.t('select.steerHint'));
   el.addEventListener('pointerdown', event => event.preventDefault());
   el.addEventListener('click', event => this.onClick(event));
   document.addEventListener('selectionchange', () => {
@@ -123,7 +129,12 @@ class SelectionMenu {
   this.range = range;
   this.box = box;
   this.text = text;
-  this.mini.hidden = this.divider.hidden = !!box.closest('dialog');
+  // Own prompts offer Steer (edit and rerun from here); replies offer Ask and Mini chat.
+  const own = !!box.closest('.message.is-user');
+  const inDialog = !!box.closest('dialog');
+  this.steer.hidden = !own;
+  this.ask.hidden = own;
+  this.mini.hidden = this.divider.hidden = own || inDialog;
   if (this.el.parentElement !== thread) {
    this.el.classList.remove('is-shown');
    thread.append(this.el);
@@ -164,6 +175,7 @@ class SelectionMenu {
   this.hide();
   document.getSelection().removeAllRanges();
   if (button.dataset.action === 'ask') this.onAsk(text, box);
+  else if (button.dataset.action === 'steer') this.onSteer(text, box);
   else this.onMini(text, box);
  }
 }

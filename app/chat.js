@@ -666,6 +666,40 @@ class Chat {
   for (const pending of turn.approvals) pending.card.settle('deny');
  }
 
+ // The record a message element belongs to, the other way round: element → entry.
+ entryOf(conv, el) {
+  if (!conv || !el) return null;
+  for (const item of conv.messages) if (this.nodes.get(item) === el) return item;
+  return null;
+ }
+
+ // Steer an own prompt: the chat rewinds to just before it — the message and everything after
+ // it go — and its words are handed back so they can be edited and sent again.
+ rewind(conv, entry) {
+  if (!conv || !entry || conv.locked) return null;
+  const at = conv.messages.indexOf(entry);
+  if (at < 0) return null;
+  if (conv.turn) {
+   const turn = conv.turn;
+   this.abort(conv);
+   turn.queue.length = 0; // nothing typed during the run comes back to life
+  }
+  const dropped = conv.messages.splice(at);
+  for (const item of dropped) {
+   const el = this.nodes.get(item);
+   if (el && el.isConnected) el.remove();
+   this.nodes.delete(item);
+   conv.tokens = Math.max(0, conv.tokens - estimate([item]));
+  }
+  this.save(conv);
+  if (conv === this.active) {
+   this.follow = true;
+   this.followBottom();
+  }
+  this.onChange();
+  return entry.text || entry.content || '';
+ }
+
  onModeChange() {
   const mode = this.settings.mode;
   for (const conv of this.conversations.values()) {

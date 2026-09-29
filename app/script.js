@@ -48,6 +48,7 @@ instructionsPill = new InstructionsPill({ button: document.querySelector('.compo
 planButton.addEventListener('click', () => chat.setAgentMode(chat.agentMode === 'plan' ? 'build' : 'plan'));
 window.PrismPlan = { approve: () => chat.setAgentMode('build') };
 window.__prismSubagent = (label, prompt) => chat.deploySubagent(prompt, label);
+window.__prismChat = chat;
 new ParallelPanel({
  button: document.querySelector('.composer-parallel'),
  panel: document.querySelector('.parallel-panel'),
@@ -129,6 +130,19 @@ new SelectionMenu({
     syncComposer();
   },
   onMini: text => MiniChat.open({ settings, source: chat, quote: text }),
+  // Steer an own prompt: rewind the chat to that message and put its words back in the composer.
+  onSteer: (text, box) => {
+    const conv = box.closest('.thread-list')?.__conversation;
+    if (!conv || conv !== chat.active) return;
+    const entry = chat.entryOf(conv, box.closest('.message'));
+    if (!entry) return;
+    const prompt = chat.rewind(conv, entry);
+    if (prompt == null) return;
+    composerInput.value = prompt;
+    composerText.refresh();
+    syncComposer();
+    composerInput.focus({ preventScroll: true });
+  },
 });
 document.querySelector('.composer-add').addEventListener('add', () => attachments.pick());
 settings.show(chat.model);
@@ -201,7 +215,10 @@ composer.addEventListener('mousedown', (event) => {
 });
 
 function syncComposer() {
-  composerSend.toggleAttribute('disabled', !composerText.text().trim() && !attachments.count);
+  const hasContent = Boolean(composerText.text().trim()) || Boolean(attachments.count);
+  // While a reply is running the button stops it (empty composer) or steers it (words written).
+  composerSend.mode = chat.busy ? (hasContent ? 'steer' : 'stop') : 'send';
+  composerSend.toggleAttribute('disabled', !hasContent && !chat.busy);
   composerField.classList.toggle('has-value', composerInput.value !== '');
 }
 
@@ -284,5 +301,6 @@ composerInput.addEventListener('keydown', (event) => {
 });
 
 composerSend.addEventListener('composer-send', () => send());
+composerSend.addEventListener('composer-stop', () => chat.stop());
 
 syncComposer();
