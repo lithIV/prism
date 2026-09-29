@@ -59,6 +59,11 @@ class SelectionFocus {
   const thread = box.closest('.thread'), list = box.closest('.thread-list');
   if (!thread || !list) { this.hide(); return; }
   this.range = range;
+  // A solid bubble (an own message) stays whole: splitting a small pill into blurred and sharp
+  // blocks reads as damage. A reply keeps only the picked words, so its thinking and the rest
+  // of a long answer still step back.
+  this.message = box.closest('.message') || box;
+  this.card = !!box.closest('.message.is-user');
   if (this.veil && this.thread === thread && this.list === list) {
    if (this.draw()) this.pick(box);
    return;
@@ -131,16 +136,22 @@ class SelectionFocus {
   this.frame = requestAnimationFrame(() => this.draw());
  }
 
- // Cuts the picked words out of the veil: each line of the selection is a soft-edged band, so
- // only the chosen sentence stays sharp — the rest of the message, thinking included, steps back.
+ // Cuts a hole in the veil for the selection. Own messages cut their whole bubble out (keeping
+ // the pill in one piece); replies cut the picked lines only, so thinking and the rest step back.
  draw() {
   const veil = this.veil, list = this.list, range = this.range;
   if (!veil || !range) return false;
   veil.style.top = px(list.offsetTop);
   veil.style.height = px(list.offsetHeight);
   const origin = veil.getBoundingClientRect();
-  const rects = [...range.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0)
-   .map(rect => ({ left: rect.left - origin.left, right: rect.right - origin.left, top: rect.top - origin.top, bottom: rect.bottom - origin.top }));
+  const rects = [];
+  if (this.card) {
+   const box = this.message.getBoundingClientRect();
+   if (!box.width || !box.height) { this.hide(); return false; }
+   rects.push({ left: box.left - origin.left, right: box.right - origin.left, top: box.top - origin.top, bottom: box.bottom - origin.top });
+  } else {
+   for (const rect of range.getClientRects()) if (rect.width > 0 && rect.height > 0) rects.push({ left: rect.left - origin.left, right: rect.right - origin.left, top: rect.top - origin.top, bottom: rect.bottom - origin.top });
+  }
   if (!rects.length) { this.hide(); return false; }
   const images = ['linear-gradient(#000 0 0)'], sizes = ['100% 100%'], places = ['0 0'], ops = ['subtract'];
   const cut = (image, x, y, width, height) => {
