@@ -1,7 +1,7 @@
 {
   "name": "prism",
   "productName": "Prism",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "private": true,
   "description": "Prism — a personal Windows desktop agent forked from OpenGhost, with OpenCode Go, MCP, memory, subagents, Claude skills and Discord notifications",
   "main": "desktop/main.js",

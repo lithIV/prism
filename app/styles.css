@@ -1731,8 +1731,8 @@ ghost-thinking {
   z-index: 1;
   right: 0;
   left: 0;
-  -webkit-backdrop-filter: blur(4px) brightness(0.85) contrast(0.97);
-  backdrop-filter: blur(4px) brightness(0.85) contrast(0.97);
+  -webkit-backdrop-filter: blur(2.5px) brightness(0.92) contrast(0.985);
+  backdrop-filter: blur(2.5px) brightness(0.92) contrast(0.985);
   pointer-events: none;
   user-select: none;
 }
@@ -5425,7 +5425,7 @@ h6.md-h {
 /* While a piece of a reply is selected the composer steps back with the feed, with the same blur and dimming as the veil. */
 .is-veiled > .composer,
 .is-veiled > .composer-tags {
-  filter: blur(4px) brightness(0.85) contrast(0.97);
+  filter: blur(2.5px) brightness(0.92) contrast(0.985);
   transition:
     margin-top var(--motion-duration) var(--motion-easing),
     margin-bottom var(--motion-duration) var(--motion-easing),
