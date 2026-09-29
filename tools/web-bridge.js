@@ -143,6 +143,9 @@ window.openghost = {
  skills: {
   list: directory => invoke('skills:list', directory),
  },
+ app: {
+  version: () => invoke('app:version'),
+ },
  profile: {
   info: () => invoke('profile:info'),
   switch: async () => false,

@@ -183,6 +183,22 @@ ipcMain.on('notify', (event, payload) => {
 
 const fromApp = event => event.sender.getType() === 'window' && event.senderFrame?.url.startsWith('file:');
 ipcMain.handle('tool:run', (event, id, name, args, cwd) => fromApp(event) ? Tools.runTool(id, name, args, cwd, event.sender) : { error: 'Not allowed' });
+ipcMain.handle('app:version', event => fromApp(event) ? app.getVersion() : null);
+ipcMain.handle('update:check', async event => {
+ if (!fromApp(event)) return null;
+ try {
+  const info = await Updater.check();
+  if (!info) return { latest: true };
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (await Updater.prompt(win, info)) {
+   if (info.asset) Updater.install(info).catch(() => shell.openExternal(info.page));
+   else shell.openExternal(info.page);
+  }
+  return { version: info.version };
+ } catch {
+  return null;
+ }
+});
 ipcMain.on('browser:shown', (event, value) => { if (fromApp(event)) Browser.setShown(value); });
 ipcMain.handle('tool:cancel', (event, id) => { if (fromApp(event)) Tools.cancel(id); });
 ipcMain.handle('tool:environment', event => fromApp(event) ? Tools.environment() : null);

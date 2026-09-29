@@ -30,6 +30,12 @@ contextBridge.exposeInMainWorld('openghost', {
  skills: {
   list: directory => ipcRenderer.invoke('skills:list', directory),
  },
+ app: {
+  version: () => ipcRenderer.invoke('app:version'),
+ },
+ update: {
+  check: () => ipcRenderer.invoke('update:check'),
+ },
  instructions: {
   list: directory => ipcRenderer.invoke('instructions:list', directory),
   read: (directory, file) => ipcRenderer.invoke('instructions:read', directory, file),

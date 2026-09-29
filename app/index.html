@@ -130,6 +130,10 @@
         <svg class="settings-tab-icon" viewBox="30 30 60 60" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M38 46a22 18 0 1 1 44 0v14a10 10 0 0 1-10 10h-12"/><path d="M60 50v26M60 50l-8-8M60 50l8-8"/></svg>
         <span data-i18n="settings.memory.title">Memory</span>
       </button>
+      <button type="button" class="settings-tab" data-tab="about">
+        <svg class="settings-tab-icon" viewBox="30 30 60 60" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="60" cy="60" r="23"/><path d="M60 53.5v.5M60 63v13"/></svg>
+        <span data-i18n="settings.about.tab">About</span>
+      </button>
     </nav>
     <section class="settings-page" data-page="providers" aria-labelledby="settings-page-title">
       <header class="settings-page-header">
@@ -162,6 +166,13 @@
       </header>
       <p class="settings-lead" data-i18n="settings.memory.lead">Facts the agent keeps for later turns and other chats. It saves them itself with its memory tool; here you can add or forget them.</p>
       <div class="settings-memory-page"></div>
+    </section>
+    <section class="settings-page" data-page="about" hidden aria-labelledby="settings-about-title">
+      <header class="settings-page-header">
+        <h2 class="settings-page-title" id="settings-about-title" data-i18n="settings.about.tab">About</h2>
+        <close-button class="settings-close"></close-button>
+      </header>
+      <div class="settings-about-page"></div>
     </section>
     <div class="scrollbar settings-scrollbar" aria-hidden="true"><div class="scrollbar-thumb"></div></div>
   </dialog>

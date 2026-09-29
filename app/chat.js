@@ -18,6 +18,9 @@ const LOCK_FADE = 520;
 const TITLE_PROMPT = 'Name this conversation in 2 to 5 words in the language of the user message. Reply with the name only, without quotes, emoji or a final period.';
 const TITLE_INPUT = { user: 1500, reply: 800, max: 60 };
 const CONTEXT = { reserve: 0.1, chars: 3.2, image: 1200 };
+// How long the world around the agent (MCP tools, instruction files, skills) is kept before
+// it is read again: long enough to keep long chats quick, short enough to follow edits.
+const WORLD_TTL = 10000;
 const COMPACT = {
  prompt: 'You compress a long conversation between a user and Prism, an AI agent working on the user\'s computer, so the work can go on without the original messages. Write a dense summary in the language the user writes in, with these parts: the user\'s goals and preferences; key facts, decisions and constraints; what has been done, with file paths, commands and their results, commits; the current state and open problems; the exact next steps. Keep names, paths, numbers, versions and code identifiers exact. Leave out small talk and whatever no longer matters.',
  head: 'The earlier part of this conversation was compacted to save context. Your tools, formatting rules and browser instructions still apply; this summary does not replace them. Summary of it:',
@@ -925,28 +928,41 @@ class Chat {
   }
  }
 
+ // The world around the agent — MCP tools, instruction files, skills — changes rarely, and
+ // gathering it takes longer than it should: every request used to re-ask every MCP server
+ // and rescan folders before the first token could leave. One read is kept for a moment.
+ async world(conv) {
+  const now = Date.now(), cached = this.worldCache;
+  if (cached && cached.folder === conv.record.folder && now - cached.at < WORLD_TTL) return cached;
+  const next = { at: now, folder: conv.record.folder, mcp: '', instructions: '', skills: '' };
+  try {
+   await AgentTools.refreshMcp();
+   next.mcp = AgentTools.mcpSummary();
+  } catch {}
+  try {
+   const chosen = JSON.parse(localStorage.getItem('openghost.instructions') || '{}')[conv.record.folder];
+   if (chosen) {
+    const text = await window.openghost?.instructions?.read?.(conv.record.folder, chosen);
+    if (text && text.trim()) next.instructions = `# Project instructions (from ${chosen})\nThese come from the project's own instruction file; follow them like the user's words.\n\n${String(text).slice(0, 12000)}`;
+   }
+  } catch {}
+  try {
+   const found = (await window.openghost?.skills?.list?.(conv.record.folder)) || [];
+   if (found.length) {
+    next.skills = ['# Skills (Claude skill folders)', 'Reusable instructions saved as SKILL.md files on this computer. When a task matches one, read its file with read_file and follow it.', ...found.slice(0, 40).map(item => `- ${item.name}${item.description ? ` — ${item.description}` : ''} (${item.path})`)].join('\n');
+   }
+  } catch {}
+  this.worldCache = next;
+  return next;
+ }
+
  async system(conv) {
   const note = this.note ? `\n\n${this.note}` : '';
   if (!this.agent(conv)) return FORMAT_GUIDE + note;
   const env = await AgentTools.environment();
   const browser = window.browserPanel?.context() || '';
-  await AgentTools.refreshMcp();
-  const mcp = AgentTools.mcpSummary();
-  let instructions = '';
-  try {
-   const chosen = JSON.parse(localStorage.getItem('openghost.instructions') || '{}')[conv.record.folder];
-   if (chosen) {
-    const text = await window.openghost?.instructions?.read?.(conv.record.folder, chosen);
-    if (text && text.trim()) instructions = `# Project instructions (from ${chosen})\nThese come from the project's own instruction file; follow them like the user's words.\n\n${String(text).slice(0, 12000)}`;
-   }
-  } catch {}
-  let skills = '';
-  try {
-   const found = (await window.openghost?.skills?.list?.(conv.record.folder)) || [];
-   if (found.length) {
-    skills = ['# Skills (Claude skill folders)', 'Reusable instructions saved as SKILL.md files on this computer. When a task matches one, read its file with read_file and follow it.', ...found.slice(0, 40).map(item => `- ${item.name}${item.description ? ` — ${item.description}` : ''} (${item.path})`)].join('\n');
-   }
-  } catch {}
+  const world = await this.world(conv);
+  const mcp = world.mcp, instructions = world.instructions, skills = world.skills;
   let memory = '';
   try {
    const items = (await window.openghost?.memory?.list?.()) || [];

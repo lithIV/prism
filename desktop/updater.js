@@ -85,6 +85,21 @@ async function install(info) {
  setTimeout(() => app.quit(), 1500);
 }
 
+// The question both the launch check and the About page ask.
+async function prompt(win, info) {
+ const { response } = await dialog.showMessageBox(win, {
+  type: 'info',
+  title: 'Prism update',
+  message: `Prism ${info.version} is available`,
+  detail: `You are on ${current()}. Download it now? The installer starts when it is ready.`,
+  buttons: ['Download and install', 'Later'],
+  defaultId: 0,
+  cancelId: 1,
+  noLink: true,
+ });
+ return response === 0;
+}
+
 // Runs in the background; a failed check is only a quiet line in the log.
 function start() {
  if (!app.isPackaged && !process.env.PRISM_UPDATE_TEST_VERSION) return;
@@ -93,17 +108,7 @@ function start() {
    if (!info) return;
    console.log(`[update] ${info.version} available (running ${current()})`);
    const win = require('electron').BrowserWindow.getAllWindows()[0] || null;
-   const { response } = await dialog.showMessageBox(win, {
-    type: 'info',
-    title: 'Prism update',
-    message: `Prism ${info.version} is available`,
-    detail: `You are on ${current()}. Download it now? The installer starts when it is ready.`,
-    buttons: ['Download and install', 'Later'],
-    defaultId: 0,
-    cancelId: 1,
-    noLink: true,
-   });
-   if (response !== 0) return;
+   if (!(await prompt(win, info))) return;
    if (!info.asset) { shell.openExternal(info.page); return; }
    try {
     await install(info);
@@ -115,4 +120,4 @@ function start() {
  }, DELAY);
 }
 
-module.exports = { start, check, isNewer };
+module.exports = { start, check, prompt, install, isNewer };

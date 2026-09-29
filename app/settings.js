@@ -297,6 +297,7 @@ class Settings {
   if (name === 'mcp') this.paintMcp();
   if (name === 'effects') this.paintEffects();
   if (name === 'memory') this.paintMemory();
+  if (name === 'about') this.paintAbout();
  }
 
  mcpNote(text, tone = '') {
@@ -344,6 +345,50 @@ class Settings {
     await this.paintMemory();
    });
   }
+ }
+
+ async paintAbout() {
+  const node = this.dialog.querySelector('.settings-about-page');
+  if (!node) return;
+  let version = '';
+  try { version = (await window.openghost?.app?.version?.()) || ''; } catch {}
+  // Only the desktop app can fetch and run an installer; the web build just shows itself.
+  const updatable = Boolean(window.openghost?.desktop && window.openghost?.update?.check);
+  node.innerHTML = `
+   <div class="about-hero">
+    <span class="about-logo">${Glyphs.ghost}</span>
+    <span class="about-title">
+     <span class="about-name">Prism${version ? `<span class="about-version">${escapeHtml(version)}</span>` : ''}</span>
+     <p class="settings-hint">${escapeHtml(I18n.t('settings.about.line'))}</p>
+    </span>
+   </div>
+   ${updatable ? `<div class="settings-row">
+    <div class="settings-text">
+     <span class="settings-label">${escapeHtml(I18n.t('settings.about.updates'))}</span>
+     <p class="settings-hint">${escapeHtml(I18n.t('settings.about.updatesHint'))}</p>
+    </div>
+    <div class="settings-control">
+     <button type="button" class="settings-button is-primary" data-about-check>${escapeHtml(I18n.t('settings.about.check'))}</button>
+    </div>
+   </div>` : ''}
+   <div class="settings-row">
+    <div class="settings-text">
+     <span class="settings-label">${escapeHtml(I18n.t('settings.about.repo'))}</span>
+     <p class="settings-hint">${escapeHtml(I18n.t('settings.about.repoHint'))}</p>
+    </div>
+    <div class="settings-control">
+     <a class="settings-button" href="https://github.com/lithIV/prism" target="_blank" rel="noopener noreferrer">github.com/lithIV/prism</a>
+    </div>
+   </div>
+   <p class="settings-hint about-fine">${escapeHtml(I18n.t('settings.about.notice'))}</p>
+   <p class="settings-status" data-provider="about" role="status"></p>`;
+  node.querySelector('[data-about-check]')?.addEventListener('click', async () => {
+   this.setStatus('about', I18n.t('settings.about.checking'));
+   const result = await window.openghost.update.check().catch(() => null);
+   if (result?.version) this.setStatus('about', I18n.t('settings.about.found', { version: result.version }));
+   else if (result?.latest) this.setStatus('about', I18n.t('settings.about.latest', { version }));
+   else this.setStatus('about', I18n.t('settings.about.failed'), 'error');
+  });
  }
 
  async paintEffects() {

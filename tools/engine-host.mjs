@@ -113,6 +113,9 @@ export function createEngineHost({ profile = "" } = {}) {
  handlers.set("window:titlebar", noop);
  handlers.set("profile:info", () => ({ name: profile || "default", profiles: [profile || "default"] }));
  handlers.set("profile:switch", () => false);
+ handlers.set("app:version", () => {
+  try { return JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version || ""; } catch { return ""; }
+ });
  handlers.set("mcp:open-config", () => {
   const file = join(USER_DATA, "mcp.json");
   if (!existsSync(file)) writeFileSync(file, JSON.stringify({ servers: {} }, null, 2));
