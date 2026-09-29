@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const https = require('node:https');
 
-const REPO = 'lithium-ionic/prism';
+const REPO = 'lithIV/prism';
 const DELAY = 3500;      // let the window settle before the question
 const TIMEOUT = 12000;
 
