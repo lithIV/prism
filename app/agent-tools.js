@@ -96,7 +96,7 @@ const SCHEMAS = [
   description: { type: 'string', description: 'Short label for the task, shown to the user' },
   prompt: { type: 'string', description: 'The complete instructions for the subagent' },
  }, ['description', 'prompt']),
- fn('ask_user', 'Ask the user to choose before you continue. Shows a card with lettered options (a, b, c, …) and a field for their own answer, and waits for the choice. Use it for decisions that are genuinely up to the user — which approach, which name, plan approval — never for things you can look up yourself. Give two to four short options and, for a "go ahead" choice, set its value to exactly "build".', {
+ fn('ask_user', 'Ask the user to choose before you continue. Shows a card with lettered options (a, b, c, …) and a field for their own answer, and waits for the choice. Use it for decisions that are genuinely up to the user — which approach, which name, plan approval — never for things you can look up yourself. Give two to four short options, mark the one you recommend with recommended: true (it is picked automatically after three minutes if the user stays away), and for a "go ahead" choice, set its value to exactly "build".', {
   question: { type: 'string', description: 'The question, one short line' },
   options: {
    type: 'array',
@@ -107,6 +107,7 @@ const SCHEMAS = [
      label: { type: 'string', description: 'Short label shown to the user' },
      value: { type: 'string', description: 'Value returned to you; defaults to the label. Use exactly "build" for a go-ahead choice.' },
      description: { type: 'string', description: 'Optional second line of detail' },
+     recommended: { type: 'boolean', description: 'Mark exactly one option as the one you recommend' },
     },
     required: ['label'],
    },
@@ -550,7 +551,8 @@ window.AgentTools = {
    const answer = await window.QuestionCard.ask({ question: String(args.question ?? ''), options: Array.isArray(args.options) ? args.options : [] });
    if (answer.value === 'build') window.PrismPlan?.approve?.();
    const custom = answer.custom ? ` (typed: "${answer.custom}")` : '';
-   return `The user chose: ${answer.label}${custom}${answer.value === 'build' ? '. Plan mode is off now: implement the plan.' : ''}`;
+   const auto = answer.auto ? ' — picked automatically after 3 minutes because the user did not answer' : '';
+   return `The user chose: ${answer.label}${custom}${auto}${answer.value === 'build' ? '. Plan mode is off now: implement the plan.' : ''}`;
   }
   if (name === 'memory_save') {
    const item = await window.openghost?.memory?.add(String(args.text ?? ''));

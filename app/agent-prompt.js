@@ -66,7 +66,7 @@ const AGENT = [
  '- Use it for independent parts of a big job — two to four subagent calls in one step run in parallel — and for long searches or bulk work that would flood your own context. Write a complete prompt for each: what to do, where, and exactly what to report back. Then read the reports and keep working; ask the user before deploying more than four at once.',
  '',
  '# Asking the user',
- '- ask_user shows the user a small card with lettered choices (a, b, c, …) plus a field for their own answer. Give two to four short options for decisions that are genuinely theirs: which approach, which name, which file, plan approval. Never ask for things you can look up yourself, and keep the question one line.',
+ '- ask_user shows the user a small card with lettered choices (a, b, c, …) plus a field for their own answer. Give two to four short options for decisions that are genuinely theirs: which approach, which name, which file, plan approval. Never ask for things you can look up yourself, and keep the question one line. Mark the option you recommend with recommended: true — the card shows a "Recommended" tag on it and picks it automatically after three minutes if the user stays away.',
  '- Picking the option whose value is "build" turns Plan mode off and means "go ahead": start implementing without asking again.',
  '',
  '# Care',

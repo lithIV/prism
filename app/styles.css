@@ -8418,6 +8418,10 @@ h6.md-h {
 .question-input:focus { border-color: rgba(var(--fg-rgb), .25); }
 .question-send { flex: none; border: 0; border-radius: 10px; padding: 8px 14px; background: rgb(230,230,230); color: #0a0e16; font: inherit; font-size: 12.5px; cursor: pointer; }
 .question-card.is-answered { opacity: .55; pointer-events: none; }
+.question-option.is-recommended { border-color: rgba(var(--fg-rgb), .18); }
+.question-recommended { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: rgba(120, 200, 255, .14); color: rgba(150, 210, 255, .95); font-size: 10.5px; letter-spacing: .02em; vertical-align: 1px; }
+.question-timer { flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 0 6px; color: var(--fg-tertiary); font-family: var(--mono-font); font-size: 11.5px; }
+.question-hg { width: 12px; height: 12px; opacity: .75; }
 
 
 /* Prism: instruction file pill and menu */

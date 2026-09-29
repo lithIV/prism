@@ -187,6 +187,8 @@ const STRINGS = {
   'ask.title': 'Ask the user',
   'ask.custom': 'Or type your own answer…',
   'ask.send': 'Send',
+  'ask.recommended': 'Recommended',
+  'ask.autoHint': 'If no answer comes, the recommended choice is picked automatically.',
   'instructions.pick': 'Instructions',
   'instructions.title': 'Instruction file for this folder',
   'instructions.none': 'None',
