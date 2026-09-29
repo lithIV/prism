@@ -170,17 +170,18 @@ const NAMES = {
  'omen-alpha': 'Omen Alpha',
 };
 
-// Models that read pictures. The live catalog lists the input modalities, which is the truth;
-// the model name is only a fallback for when the cache is missing. A model such as
-// deepseek-v4.1-flash carries no "vision" in its name, so the name alone gets it wrong.
-const VISION = /(vision|omni|^gpt-|^grok-|^muse-spark|qwen3\.8-flash)/;
+// Models that read pictures. The live catalog lists the input modalities, which is the truth
+// for everything else; the names below are the DeepSeek flash family, which accepts images
+// natively even when a catalog entry leaves the image modality out (or the cache is stale).
+const VISION = /(vision|omni|^gpt-|^grok-|^muse-spark|qwen3\.8-flash|^deepseek-(flash|v4\.1-flash|v4-flash)$)/;
 function visionOf(id) {
+ if (VISION.test(id)) return true;
  const live = catalog()?.[id];
  if (live) {
   if (Array.isArray(live.modalities?.input)) return live.modalities.input.includes('image');
   if (typeof live.attachment === 'boolean') return live.attachment;
  }
- return VISION.test(id);
+ return false;
 }
 
 const CONTEXT = id => {

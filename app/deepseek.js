@@ -51,7 +51,7 @@ async function listModels(key, signal) {
   context: Number(model.context_window) || 0,
   efforts: effortsOf(model),
   defaultEffort: model.effort?.default_level || '',
-  vision: Array.isArray(model.input_modalities) ? model.input_modalities.includes('image') : true,
+  vision: Array.isArray(model.input_modalities) ? (model.input_modalities.includes('image') || /^deepseek-(flash|v4\.1-flash|v4-flash)$/i.test(model.id)) : true,
  }));
 }
 
