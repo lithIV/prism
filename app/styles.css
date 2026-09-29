@@ -1102,7 +1102,8 @@ body {
 
 .thread-view::after {
   bottom: 0;
-  background: linear-gradient(rgba(25, 25, 25, 0), var(--chat-bg) 70%);
+  /* Off on request: the newest reply sat under this gradient and looked washed out. */
+  background: none;
 }
 
 .thread {
