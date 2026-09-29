@@ -1718,26 +1718,10 @@ ghost-thinking {
   background: rgba(var(--selection-rgb), var(--selection-alpha));
 }
 
-/* The picked words keep their blue wash: that wash, made brighter, is what marks them once the feed is blurred. */
+/* The picked words keep their blue wash: that wash, made brighter, is what marks them. */
 .select-held {
   --selection-alpha: 0.42;
   transition: --selection-alpha 0.45s ease;
-}
-
-/* While a piece of a reply is selected, the rest of the feed steps back behind a soft blur; the selection itself is cut out of the veil.
-   Brightness dims the text and the slightly lowered contrast lifts the chat background back to its own color, so the cut-outs leave no visible boxes. */
-.select-focus {
-  position: absolute;
-  z-index: 1;
-  right: 0;
-  left: 0;
-  -webkit-backdrop-filter: blur(2.5px) brightness(0.92) contrast(0.985);
-  backdrop-filter: blur(2.5px) brightness(0.92) contrast(0.985);
-  pointer-events: none;
-  user-select: none;
-  /* Its own layer: the mask's gradients then render without banding lines on the composite. */
-  transform: translateZ(0);
-  will-change: backdrop-filter;
 }
 
 /* Once it has faded out the menu leaves the layout altogether: left where the last selection was, deep in a long reply,
@@ -5096,9 +5080,6 @@ h6.md-h {
   transition: opacity 0.25s ease, transform 0.5s cubic-bezier(0.34, 1.5, 0.64, 1), visibility 0s, filter 0.45s var(--motion-easing);
 }
 
-.is-veiled .thread-bottom {
-  filter: blur(5px) brightness(0.78) contrast(0.949);
-}
 .main.is-empty::after {
   flex-grow: 1;
 }
@@ -5423,16 +5404,6 @@ h6.md-h {
     margin-top var(--motion-duration) var(--motion-easing),
     margin-bottom var(--motion-duration) var(--motion-easing),
     filter 0.42s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* While a piece of a reply is selected the composer steps back with the feed, with the same blur and dimming as the veil. */
-.is-veiled > .composer,
-.is-veiled > .composer-tags {
-  filter: blur(2.5px) brightness(0.92) contrast(0.985);
-  transition:
-    margin-top var(--motion-duration) var(--motion-easing),
-    margin-bottom var(--motion-duration) var(--motion-easing),
-    filter 0.52s var(--motion-easing);
 }
 
 .main.is-empty .composer {
