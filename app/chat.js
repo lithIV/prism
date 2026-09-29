@@ -1429,11 +1429,44 @@ class Chat {
   return el;
  }
 
- toolbar() {
+ // The row under a message: Copy everywhere, Steer on your own words (rewind and edit the
+ // prompt), and Ask / Mini chat under replies, so the actions never need a drag-selection.
+ toolbar(kind = 'assistant') {
   const tools = document.createElement('div');
   tools.className = 'message-tools';
-  tools.innerHTML = `<button class="md-copy message-copy" type="button" aria-label="${I18n.t('message.copy')}">${Markdown.COPY_ICON}</button>`;
+  const copy = document.createElement('button');
+  copy.className = 'md-copy message-copy';
+  copy.type = 'button';
+  copy.setAttribute('aria-label', I18n.t('message.copy'));
+  copy.innerHTML = Markdown.COPY_ICON;
+  tools.append(copy);
+  if (kind === 'user') {
+   tools.append(this.toolButton('steer', Glyphs.pencil, I18n.t('select.steer'), I18n.t('select.steerHint'), button => {
+    const message = button.closest('.message');
+    if (message) window.dispatchEvent(new CustomEvent('prism-steer-message', { detail: { message } }));
+   }));
+  } else {
+   tools.append(this.toolButton('ask', Glyphs.quote, I18n.t('select.ask'), I18n.t('message.askHint'), button => {
+    const message = button.closest('.message');
+    if (message) window.dispatchEvent(new CustomEvent('prism-quote-message', { detail: { text: this.copyText(message), message } }));
+   }));
+   tools.append(this.toolButton('mini', Glyphs.bubble, I18n.t('select.mini'), I18n.t('message.miniHint'), button => {
+    const message = button.closest('.message');
+    if (message) MiniChat.open({ settings: this.settings, source: this, quote: this.copyText(message) });
+   }));
+  }
   return tools;
+ }
+
+ toolButton(name, glyph, label, title, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `message-tool message-tool-${name}`;
+  button.innerHTML = glyph;
+  button.setAttribute('aria-label', label);
+  if (title) button.title = title;
+  button.addEventListener('click', () => onClick(button));
+  return button;
  }
 
  showGhost(view) {
@@ -1533,7 +1566,7 @@ class Chat {
    el.append(bubble);
   }
   if (text) {
-   el.append(this.toolbar());
+   el.append(this.toolbar('user'));
    el.__entry = { content: text };
   }
   return el;

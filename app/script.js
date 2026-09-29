@@ -23,10 +23,27 @@ let instructionsPill = null;
 let effortSlider = null;
 
 new SmoothHeight(composerField, composerInput);
-new ResizeObserver(() => {
+// Keeps the room above the composer and the composer's own top edge in two custom properties,
+// so anything that hangs from the composer (the pills, the welcome ghost) follows it everywhere.
+const measureComposer = () => {
   const gap = parseFloat(getComputedStyle(main).getPropertyValue('--composer-bottom-gap')) || 0;
   main.style.setProperty('--composer-space', `${Math.ceil(composer.offsetHeight + gap)}px`);
-}).observe(composer);
+  const box = composer.getBoundingClientRect(), frame = main.getBoundingClientRect();
+  main.style.setProperty('--composer-top', `${Math.ceil(frame.bottom - box.top)}px`);
+};
+// The composer slides up and down between the empty and chat states over half a second;
+// while that runs the top has to be read every frame or it stays where the slide began.
+const settleComposer = () => {
+  const until = performance.now() + 800;
+  const step = () => {
+    measureComposer();
+    if (performance.now() < until) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+};
+new ResizeObserver(measureComposer).observe(composer);
+new MutationObserver(settleComposer).observe(main, { attributes: true, attributeFilter: ['class'] });
+window.addEventListener('resize', measureComposer);
 new Scrollbar(composerInput, document.querySelector('.composer-scrollbar'));
 const threadScrollbar = new Scrollbar(thread, document.querySelector('.thread-scrollbar'));
 new Scrollbar(document.querySelector('.chats-scroll'), document.querySelector('.chats-scrollbar'));
@@ -123,6 +140,20 @@ const attachments = new Attachments({
   onChange: syncComposer,
   isActive: () => !MiniChat.current && !chat.active?.locked,
 });
+// Steer: rewind the chat to that message and put its words back into the composer.
+function steerMessage(message) {
+  const conv = message?.closest('.thread-list')?.__conversation;
+  if (!conv || conv !== chat.active) return;
+  const entry = chat.entryOf(conv, message);
+  if (!entry) return;
+  const prompt = chat.rewind(conv, entry);
+  if (prompt == null) return;
+  composerInput.value = prompt;
+  composerText.refresh();
+  syncComposer();
+  composerInput.focus({ preventScroll: true });
+}
+
 new SelectionMenu({
   onAsk: (text, box) => {
     const mini = box.closest('.mini')?.__mini;
@@ -131,19 +162,18 @@ new SelectionMenu({
     syncComposer();
   },
   onMini: text => MiniChat.open({ settings, source: chat, quote: text }),
-  // Steer an own prompt: rewind the chat to that message and put its words back in the composer.
-  onSteer: (text, box) => {
-    const conv = box.closest('.thread-list')?.__conversation;
-    if (!conv || conv !== chat.active) return;
-    const entry = chat.entryOf(conv, box.closest('.message'));
-    if (!entry) return;
-    const prompt = chat.rewind(conv, entry);
-    if (prompt == null) return;
-    composerInput.value = prompt;
-    composerText.refresh();
-    syncComposer();
-    composerInput.focus({ preventScroll: true });
-  },
+  onSteer: (text, box) => steerMessage(box.closest('.message')),
+});
+// The hover actions under a message speak the same way the selection menu does.
+window.addEventListener('prism-steer-message', event => steerMessage(event.detail?.message));
+window.addEventListener('prism-quote-message', event => {
+  const { text, message } = event.detail || {};
+  if (!text) return;
+  const mini = message?.closest('.mini')?.__mini;
+  if (mini) { mini.quote(text); return; }
+  composerText.insertQuote(text);
+  syncComposer();
+  composerInput.focus({ preventScroll: true });
 });
 document.querySelector('.composer-add').addEventListener('add', () => attachments.pick());
 settings.show(chat.model);

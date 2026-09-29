@@ -895,6 +895,11 @@ body.is-resizing-sidebar * {
   user-select: none !important;
 }
 
+/* While the edge is dragged the chat follows at once; the slow slide is only for the collapse button. */
+body.is-resizing-sidebar .main {
+  transition: none;
+}
+
 /* A narrow window slides the sidebar over the chat; a resize handle there would only be in the way. */
 @media (max-width: 820px) {
   .sidebar-resizer {
@@ -1359,6 +1364,41 @@ ghost-thinking {
 
 .message-tools + .message-error {
   margin-top: 6px;
+}
+
+/* The actions under a message: small icon buttons beside the copy button, each with a hint. */
+.message-tool {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  outline: none;
+  background: transparent;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.message-tool:hover {
+  background: var(--control-hover-bg);
+  color: var(--fg-primary);
+}
+
+.message-tool:focus-visible {
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.message-tool svg {
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+}
+
+.message.is-user .message-tool {
+  color: rgba(var(--fg-rgb), 0.55);
 }
 
 .message.is-user .message-tools {
@@ -5365,11 +5405,13 @@ h6.md-h {
   margin-bottom: 0;
 }
 
-/* The folder pill and the instructions pill float above the composer, in a row of their own. */
+/* The folder pill and the instructions pill sit at the left edge of the chat area,
+   just above the composer (the script keeps --composer-top in step with it). */
 .composer-tags {
   position: absolute;
-  bottom: calc(100% + 12px);
-  left: 2px;
+  z-index: 2;
+  left: 14px;
+  bottom: calc(var(--composer-top, 140px) + 12px);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8365,10 +8407,10 @@ h6.md-h {
 .message-thinking.is-open .message-thinking-body{grid-template-rows:1fr;opacity:1}
 .message-thinking-inner{min-height:0;overflow:hidden;white-space:pre-wrap;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.42);font-style:italic;scrollbar-width:thin;scrollbar-color:rgba(var(--fg-rgb),0.15) transparent}
 .message-thinking.is-open .message-thinking-inner{max-height:300px;overflow-y:auto}
-/* Extended thinking: the box shows like a terminal log — no header, nothing to fold. */
+/* Extended thinking: the box shows in full, like a terminal log — no header, no folding, no inner scroll. */
 .message-thinking.is-extended .message-thinking-head{display:none}
 .message-thinking.is-extended .message-thinking-body{grid-template-rows:1fr;opacity:1}
-.message-thinking.is-extended .message-thinking-inner{max-height:300px;overflow-y:auto}
+.message-thinking.is-extended .message-thinking-inner{max-height:none;overflow:visible}
 
 
 /* Prism: tool bodies use the app's thin scrollbar, like code blocks do */

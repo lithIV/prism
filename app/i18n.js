@@ -229,6 +229,8 @@ const STRINGS = {
   'settings.about.repo': 'Repository',
   'settings.about.repoHint': 'Source, releases and issues.',
   'settings.about.notice': 'A personal, non-commercial fork. The OpenGhost ghost art is used under the license\'s allowance, and this is not the official OpenGhost.',
+  'message.askHint': 'Quote this reply into the composer',
+  'message.miniHint': 'Talk about this reply in a mini chat',
   'settings.memory.hint': 'Facts the agent keeps for later turns and other chats. It saves them itself with its memory tool; you can add or remove them here.',
   'settings.memory.placeholder': 'A fact to remember…',
   'settings.memory.add': 'Save',
