@@ -10,9 +10,9 @@ const VEIL = [
 const IN = { duration: 520, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' };
 const OUT = { duration: 420, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
 const PAD = { x: 2, y: 3 };
-// Sideways the blur eases in over several letters; up and down it reaches well into the lines
-// above and below, so the cut-out reads as a soft-edged highlight rather than a hard hole.
-const FEATHER = { x: 96, y: 32 };
+// The blur hugs the picked words: a small feather is enough to keep the edge soft now that
+// the veil itself is light (2.5px), and a wide one would leave a sharp halo around them.
+const FEATHER = { x: 36, y: 9 };
 const JOIN = 16;
 const STEPS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 
