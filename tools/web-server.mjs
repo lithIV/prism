@@ -7,11 +7,24 @@
 //   node tools/web-server.mjs [--port 8787] [--host 127.0.0.1] [--profile work] [--no-open]
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
+import { networkInterfaces } from "node:os";
 import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { WebSocketServer } from "ws";
 import { createEngineHost } from "./engine-host.mjs";
+
+// The addresses a phone on the same network would use: non-internal IPv4, LAN ranges first.
+function lanAddresses() {
+ const out = [];
+ for (const list of Object.values(networkInterfaces())) {
+  for (const item of list || []) {
+   if (item.family === "IPv4" && !item.internal) out.push(item.address);
+  }
+ }
+ const rank = value => (/^192\.168\./.test(value) ? 0 : /^10\./.test(value) ? 1 : /^172\.(1[6-9]|2\d|3[01])\./.test(value) ? 2 : 3);
+ return out.sort((a, b) => rank(a) - rank(b));
+}
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
