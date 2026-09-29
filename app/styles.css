@@ -1735,6 +1735,9 @@ ghost-thinking {
   backdrop-filter: blur(2.5px) brightness(0.92) contrast(0.985);
   pointer-events: none;
   user-select: none;
+  /* Its own layer: the mask's gradients then render without banding lines on the composite. */
+  transform: translateZ(0);
+  will-change: backdrop-filter;
 }
 
 /* Once it has faded out the menu leaves the layout altogether: left where the last selection was, deep in a long reply,
