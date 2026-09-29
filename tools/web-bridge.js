@@ -7,11 +7,36 @@ if (window.openghost) return;
 const state = { ws: null, pending: new Map(), listeners: new Map(), seq: 0 };
 let ready = null;
 
+// A quiet socket gets dropped by the browser or the network after a while, and the server
+// aims its replies at whichever connection spoke last. A small call every twenty seconds
+// keeps the socket warm and re-points the replies here, so a reply still being written when
+// the page was away carries on arriving without the user having to prod it.
+const PING = { every: 20000, channel: 'profile:info' };
+let beat = 0;
+
+function keepWarm() {
+ clearTimeout(beat);
+ beat = setTimeout(() => {
+  nudge();
+  keepWarm();
+ }, PING.every);
+}
+
+function nudge() {
+  try {
+   if (state.ws && state.ws.readyState === 1) invoke(PING.channel).catch(() => {});
+  } catch {}
+}
+
 function connect() {
  ready = new Promise((resolve, reject) => {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = state.ws = new WebSocket(`${proto}://${location.host}/ws`);
-  ws.onopen = () => resolve();
+  ws.onopen = () => {
+   resolve();
+   keepWarm();
+   nudge();
+  };
   ws.onclose = () => {
    for (const pending of state.pending.values()) pending.reject(new Error('connection lost'));
    state.pending.clear();
@@ -35,6 +60,9 @@ function connect() {
   };
  });
 }
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) nudge(); });
+window.addEventListener('online', () => nudge());
 
 const invoke = (channel, ...args) => {
  const id = ++state.seq;

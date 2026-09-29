@@ -292,6 +292,8 @@ const STRINGS = {
   'media.slide': 'Photo {n} of {count}',
   'media.prev': 'Previous photo',
   'media.next': 'Next photo',
+  'lightbox.label': 'Picture',
+  'lightbox.close': 'Close',
   'diagram.building': 'Drawing diagram',
   'diagram.edit': 'Edit diagram',
   'diagram.done': 'Done editing',

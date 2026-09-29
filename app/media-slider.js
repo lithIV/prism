@@ -71,6 +71,11 @@ class MediaSlider {
    const shade = document.createElement('span');
    shade.className = 'media-shade';
    card.append(img, shade);
+   // Press the picture to open it full size; a drag that actually moved is not a press.
+   card.addEventListener('click', () => {
+    if (this.suppressClick) return;
+    window.Lightbox?.open(this.images, k);
+   });
    el.append(card);
    this.cards.push(card);
    this.shades.push(shade);
@@ -200,6 +205,9 @@ class MediaSlider {
   if (!drag || e.pointerId !== drag.id) return;
   this.drag = null;
   if (!drag.moved) return;
+  // The press that turned into a drag must not also open the picture.
+  this.suppressClick = true;
+  setTimeout(() => { this.suppressClick = false; }, 0);
   this.el.classList.remove('is-dragging');
   if (this.el.hasPointerCapture(e.pointerId)) this.el.releasePointerCapture(e.pointerId);
   const [t0, x0] = drag.samples[0], [t1, x1] = drag.samples[drag.samples.length - 1];
