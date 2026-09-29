@@ -135,6 +135,14 @@ window.openghost = {
   update: (id, text) => invoke('memory:update', id, text),
   remove: id => invoke('memory:remove', id),
  },
+ instructions: {
+  list: directory => invoke('instructions:list', directory),
+  read: (directory, file) => invoke('instructions:read', directory, file),
+  open: directory => invoke('instructions:open', directory),
+ },
+ skills: {
+  list: directory => invoke('skills:list', directory),
+ },
  profile: {
   info: () => invoke('profile:info'),
   switch: async () => false,

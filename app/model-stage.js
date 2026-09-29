@@ -193,16 +193,24 @@ class ModelStage {
   return svg;
  }
 
- // The glyph column stands right above the button; the list grows up from the composer and scrolls once it reaches the top.
+ // The glyph column stands right above the button; the list grows up from the composer and
+ // scrolls once it reaches the top. A list that fits is centered in the free room above the
+ // composer, so on a big monitor the models sit in the middle of the screen instead of hanging
+ // under the composer's edge.
  place() {
   const b = this.button.getBoundingClientRect(), top = this.button.closest('.composer').getBoundingClientRect().top;
-  const bottom = innerHeight - top + GAP;
+  const bottomLimit = top - GAP + ROOM.bottom;
+  const band = Math.max(180, bottomLimit - ROOM.top);
+  this.list.style.maxHeight = `${band}px`;
+  const height = this.list.offsetHeight;
+  const centerY = (ROOM.top + bottomLimit) / 2;
+  const bottomEdge = Math.min(bottomLimit, centerY + height / 2);
   Object.assign(this.list.style, {
    right: `${Math.max(0, innerWidth - (b.left + b.width / 2) - MARK / 2 - ROOM.right)}px`,
-   bottom: `${bottom - ROOM.bottom}px`,
-   maxHeight: `${Math.max(180, innerHeight - bottom - ROOM.top + ROOM.bottom)}px`,
+   bottom: `${Math.max(0, innerHeight - bottomEdge)}px`,
   });
   this.bend();
+  requestAnimationFrame(() => { if (this.state === 'open' || this.state === 'confirm') this.bend(); });
  }
 
  // Scrolls so the row sits in the middle of the list, where the drum is flat.

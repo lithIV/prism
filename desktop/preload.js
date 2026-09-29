@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('openghost', {
  instructions: {
   list: directory => ipcRenderer.invoke('instructions:list', directory),
   read: (directory, file) => ipcRenderer.invoke('instructions:read', directory, file),
+  open: directory => ipcRenderer.invoke('instructions:open', directory),
  },
  discord: {
   get: () => ipcRenderer.invoke('discord:get'),

@@ -5321,10 +5321,18 @@ h6.md-h {
   margin-bottom: 0;
 }
 
-.composer-folder {
+/* The folder pill and the instructions pill float above the composer, in a row of their own. */
+.composer-tags {
   position: absolute;
   bottom: calc(100% + 12px);
   left: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.composer-folder {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -6027,11 +6035,11 @@ h6.md-h {
 }
 
 .model-list.can-up {
-  --fade-top: 72px;
+  --fade-top: 52px;
 }
 
 .model-list.can-down {
-  --fade-bottom: 72px;
+  --fade-bottom: 52px;
 }
 
 .model-group {
@@ -6085,9 +6093,9 @@ h6.md-h {
   text-align: right;
   cursor: pointer;
   pointer-events: auto;
-  opacity: 0.26;
-  filter: blur(1.5px);
-  transform: scale(0.95);
+  opacity: 0.42;
+  filter: blur(1px);
+  transform: scale(0.97);
   transform-origin: 100% 50%;
   transition: opacity 0.35s ease, filter 0.45s var(--motion-easing), transform 0.6s var(--motion-easing);
 }
@@ -6125,7 +6133,7 @@ h6.md-h {
 }
 
 .model-meta {
-  color: rgba(var(--fg-rgb), 0.55);
+  color: rgba(var(--fg-rgb), 0.68);
   font-size: 13px;
   font-weight: 500;
   line-height: 1;
@@ -8413,15 +8421,23 @@ h6.md-h {
 
 
 /* Prism: instruction file pill and menu */
-.composer-instructions{anchor-name:--instructions;display:flex;align-items:center;height:var(--composer-button-size);max-width:170px;padding:0 12px;border:0;border-radius:calc(var(--composer-button-size)/2);background:transparent;color:rgb(var(--composer-fg-rgb));font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.composer-instructions:hover{background:rgba(var(--composer-fg-rgb),.06)}
-.composer-instructions.is-on{background:rgba(var(--composer-fg-rgb),.09)}
+.composer-instructions{anchor-name:--instructions;display:flex;align-items:center;gap:7px;height:32px;max-width:190px;padding:0 13px 0 10px;border:0;border-radius:16px;outline:none;background:var(--composer-bg);box-shadow:inset 0 0 0 1px var(--composer-border),0 8px 24px rgba(0,0,0,.25);color:var(--fg-primary);font:inherit;font-size:var(--small-font-size);line-height:1;cursor:pointer;white-space:nowrap;overflow:hidden}
+.composer-instructions[hidden]{display:none}
+.composer-instructions .glyph{flex:none;width:15px;height:15px;color:rgba(var(--fg-rgb),.62);transition:color .2s ease}
+.composer-instructions:hover{background:var(--control-hover-bg)}
+.composer-instructions:hover .glyph{color:rgba(var(--fg-rgb),.9)}
+.composer-instructions.is-on{box-shadow:inset 0 0 0 1px rgba(var(--fg-rgb),.2),0 8px 24px rgba(0,0,0,.25)}
+.composer-instructions-text{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .instructions-menu{position:fixed;position-anchor:--instructions;position-area:top span-left;position-try-fallbacks:flip-block;inset:auto;margin:0 0 10px;padding:8px;width:280px;max-height:340px;overflow-y:auto;background:var(--composer-bg);border:0;border-radius:14px;box-shadow:inset 0 0 0 1px var(--composer-border),0 18px 48px rgba(0,0,0,.45);color:rgba(var(--fg-rgb),.85)}
 .instructions-head{padding:4px 8px 8px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-tertiary)}
 .instructions-item{display:block;width:100%;padding:7px 8px;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:12.5px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .instructions-item:hover{background:rgba(var(--fg-rgb),.06)}
 .instructions-item.is-on{color:rgb(var(--composer-accent-rgb))}
 .instructions-empty{padding:8px;font-size:12px;color:var(--fg-tertiary)}
+.instructions-sep{height:1px;margin:6px 4px;background:rgba(var(--fg-rgb),.08)}
+.instructions-open{display:flex;align-items:center;gap:8px;width:100%;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--fg-secondary);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.instructions-open .glyph{flex:none;width:15px;height:15px;color:rgba(var(--fg-rgb),.55)}
+.instructions-open:hover{background:rgba(var(--fg-rgb),.06);color:var(--fg-primary)}
 
 
 /* Prism: the Memory settings page */

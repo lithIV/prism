@@ -190,6 +190,8 @@ const STRINGS = {
   'instructions.none': 'None',
   'instructions.empty': 'No .md instruction files found here.',
   'instructions.hint': 'The agent follows this file in every chat in this folder.',
+  'instructions.hintEmpty': 'Pick the instruction file the agent follows in this folder.',
+  'instructions.open': 'Open instructions folder',
   'settings.discord.title': 'Discord notifications',
   'settings.discord.hint': 'When a chat finishes, a bot sends you a DM with its name, the outcome and a short summary. Create a bot at discord.com/developers, paste its token, and your own user id (enable Developer Mode in Discord, right-click yourself, Copy User ID). The same bot can answer DMs from your phone: run "prism discord" on this PC.',
   'settings.discord.token': 'bot token…',

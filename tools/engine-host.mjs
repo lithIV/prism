@@ -75,12 +75,14 @@ export function createEngineHost({ profile = "" } = {}) {
  const Tools = require(join(ROOT, "desktop", "tools.js"));
  const MCP = require(join(ROOT, "desktop", "mcp.js"));
  const Memory = require(join(ROOT, "desktop", "memory.js"));
+ const Instructions = require(join(ROOT, "desktop", "instructions.js"));
  const LLM = require(join(ROOT, "desktop", "llm.js"));
 
  const allow = () => true;
  LLM.register(allow);
  MCP.register(allow);
  Memory.register(allow);
+ Instructions.register(allow);
  MCP.init().catch(() => {});
 
  // store + tools + profile handlers, the same ones main.js registers

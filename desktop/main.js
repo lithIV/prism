@@ -3,12 +3,12 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, nativeTheme, shell, Notification } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
-const os = require('node:os');
 const Tools = require('./tools');
 const Browser = require('./browser');
 const LLM = require('./llm');
 const MCP = require('./mcp');
 const Memory = require('./memory');
+const Instructions = require('./instructions');
 const Discord = require('./discord');
 
 const APP_ID = 'com.prism.app';
@@ -139,58 +139,6 @@ function createWindow() {
  return win;
 }
 
-const INSTRUCTION_NAMES = ['AGENTS.md', 'AGENT.md', 'CLAUDE.md', 'INSTRUCTIONS.md', '.cursorrules', '.windsurfrules', '.github/copilot-instructions.md', '.claude/CLAUDE.md', '.opencode/AGENTS.md'];
-const SKILL_SOURCES = () => [
- path.join(os.homedir(), '.claude', 'skills'),
-];
-function readSkill(file) {
- try {
-  const text = fs.readFileSync(file, 'utf8').slice(0, 4000);
-  const name = /^name:\s*(.+)$/m.exec(text)?.[1]?.trim() || path.basename(path.dirname(file));
-  const description = /^description:\s*(.+)$/m.exec(text)?.[1]?.trim() || '';
-  return { name, description: description.slice(0, 200), path: file };
- } catch {
-  return null;
- }
-}
-ipcMain.handle('skills:list', (event, directory) => {
- if (!fromApp(event)) return [];
- const roots = [...SKILL_SOURCES()];
- if (typeof directory === 'string') roots.push(path.join(directory, '.claude', 'skills'));
- const out = [];
- for (const root of roots) {
-  try {
-   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const skill = readSkill(path.join(root, entry.name, 'SKILL.md'));
-    if (skill) out.push(skill);
-   }
-  } catch {}
- }
- return out.slice(0, 60);
-});
-
-ipcMain.handle('instructions:list', (event, directory) => {
- if (!fromApp(event) || typeof directory !== 'string') return [];
- const found = [];
- for (const name of INSTRUCTION_NAMES) {
-  try { if (fs.statSync(path.join(directory, name)).isFile()) found.push(name.replace(/\\/g, '/')); } catch {}
- }
- try {
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-   if (entry.isFile() && /\.md$/i.test(entry.name) && !found.includes(entry.name)) found.push(entry.name);
-   if (found.length >= 40) break;
-  }
- } catch {}
- return found;
-});
-ipcMain.handle('instructions:read', (event, directory, file) => {
- if (!fromApp(event) || typeof directory !== 'string' || typeof file !== 'string') return null;
- const base = path.resolve(directory), target = path.resolve(base, file);
- if (!target.startsWith(base)) return null;
- try { return fs.readFileSync(target, 'utf8').slice(0, 20000); } catch { return null; }
-});
-
 ipcMain.handle('folder:pick', async (event, defaultPath) => {
  const win = BrowserWindow.fromWebContents(event.sender);
  const result = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory', 'promptToCreate'], ...(typeof defaultPath === 'string' && defaultPath ? { defaultPath } : {}) });
@@ -231,6 +179,7 @@ ipcMain.handle('tool:environment', event => fromApp(event) ? Tools.environment()
 LLM.register(fromApp);
 MCP.register(fromApp);
 Memory.register(fromApp);
+Instructions.register(fromApp);
 Discord.register(fromApp);
 ipcMain.handle('profile:info', event => {
  if (!fromApp(event)) return { name: PROFILE || 'default', profiles: [] };
