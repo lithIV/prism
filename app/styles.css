@@ -8555,7 +8555,7 @@ h6.md-h {
 body.has-lightbox{overflow:hidden}
 .lightbox-stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;touch-action:none;cursor:grab}
 .lightbox-stage.is-panning{cursor:grabbing}
-.lightbox-img{max-width:92vw;max-height:88vh;border-radius:8px;box-shadow:0 30px 80px rgba(0,0,0,.55);transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.lightbox-img{max-width:92vw;max-height:88vh;border-radius:8px;box-shadow:0 30px 80px rgba(0,0,0,.55);transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none}
 .lightbox-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:0;display:grid;place-items:center}
 .lightbox-close::before,.lightbox-close::after{content:"";position:absolute;width:15px;height:1.6px;background:currentColor;border-radius:2px}
 .lightbox-close::before{transform:rotate(45deg)}

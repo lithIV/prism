@@ -49,8 +49,9 @@ class Lightbox {
   el.querySelector('.lightbox-close').addEventListener('click', () => this.close());
   this.prev.addEventListener('click', () => this.go(this.index - 1));
   this.next.addEventListener('click', () => this.go(this.index + 1));
-  // A press on the backdrop, not on the picture, puts it away.
-  this.stage.addEventListener('click', e => { if (e.target === this.stage) this.close(); });
+  // A press on the backdrop, not on the picture, puts it away. A drag that ended
+  // here is not a click, so a pan never closes the picture by accident.
+  this.stage.addEventListener('click', e => { if (e.target === this.stage && !this.panned) this.close(); });
 
   this.stage.addEventListener('pointerdown', e => this.onDown(e));
   this.stage.addEventListener('pointermove', e => this.onMove(e));
@@ -210,6 +211,9 @@ class Lightbox {
   }
 
   this.tap = null;
+  // A drag that ended on the backdrop must not also count as a click on it.
+  this.panned = true;
+  setTimeout(() => { this.panned = false; }, 0);
   if (this.scale <= ZOOM.min + 0.001) {
    const dx = e.clientX - drag.x;
    if (Math.abs(dx) >= DRAG.swipe) this.go(this.index + (dx < 0 ? 1 : -1));
