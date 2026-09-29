@@ -170,8 +170,18 @@ const NAMES = {
  'omen-alpha': 'Omen Alpha',
 };
 
-// Models that read pictures.
+// Models that read pictures. The live catalog lists the input modalities, which is the truth;
+// the model name is only a fallback for when the cache is missing. A model such as
+// deepseek-v4.1-flash carries no "vision" in its name, so the name alone gets it wrong.
 const VISION = /(vision|omni|^gpt-|^grok-|^muse-spark|qwen3\.8-flash)/;
+function visionOf(id) {
+ const live = catalog()?.[id];
+ if (live) {
+  if (Array.isArray(live.modalities?.input)) return live.modalities.input.includes('image');
+  if (typeof live.attachment === 'boolean') return live.attachment;
+ }
+ return VISION.test(id);
+}
 
 const CONTEXT = id => {
  if (/^gpt-/.test(id)) return 1050000;
@@ -191,7 +201,7 @@ function describe(id) {
   api: id,
   name: pretty(id),
   context: CONTEXT(id),
-  vision: VISION.test(id),
+  vision: visionOf(id),
   efforts,
   defaultEffort: efforts.includes('high') ? 'high' : efforts[efforts.length - 1] || '',
   // The Messages models take a plain effort (or a thinking switch), no budget.
@@ -333,4 +343,4 @@ async function stream(request, context) {
  return chat(request, context);
 }
 
-module.exports = { models, stream, MAX_OUTPUT };
+module.exports = { models, stream, describe, MAX_OUTPUT };
