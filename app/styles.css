@@ -466,6 +466,10 @@ body {
   transition-delay: 0.03s;
 }
 
+.chats-folder-action + .chats-folder-action + .chats-folder-action {
+  transition-delay: 0.06s;
+}
+
 .chats-folder-head:hover .chats-folder-action,
 .chats-folder-head:focus-within .chats-folder-action,
 .chats-folder.is-confirming .chats-folder-action {
@@ -540,6 +544,23 @@ body {
 .chat-row.is-locked .chat-title {
   filter: blur(3.5px);
   opacity: 0.5;
+}
+
+/* A rename field takes the title's place while it is edited. */
+.rename-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 6px;
+  outline: none;
+  background: rgba(var(--fg-rgb), 0.1);
+  box-shadow: inset 0 0 0 1.5px var(--focus-ring);
+  color: var(--fg-primary);
+  font: inherit;
+  font-size: var(--sidebar-font-size);
+  user-select: text;
 }
 
 .chats-folder-body {
@@ -672,7 +693,7 @@ body {
 .chat-row:hover .chat-meta,
 .chat-row:focus-within .chat-meta,
 .chat-row.is-confirming .chat-meta {
-  min-width: 78px;
+  min-width: 104px;
   transition-delay: 0.05s;
 }
 
@@ -739,6 +760,12 @@ body {
 .chat-row:focus-within .chat-action + .chat-action + .chat-action,
 .chat-row.is-confirming .chat-action + .chat-action + .chat-action {
   transition-delay: 0.11s, 0.11s, 0s, 0s;
+}
+
+.chat-row:hover .chat-action + .chat-action + .chat-action + .chat-action,
+.chat-row:focus-within .chat-action + .chat-action + .chat-action + .chat-action,
+.chat-row.is-confirming .chat-action + .chat-action + .chat-action + .chat-action {
+  transition-delay: 0.14s, 0.14s, 0s, 0s;
 }
 
 /* Locking waits while the chat is replying. */

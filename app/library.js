@@ -185,6 +185,15 @@ class Library {
   this.store.remove(`chats/${id}`).catch(() => {});
  }
 
+ // A folder's name is the app's own label for it; the directory on disk keeps its name.
+ renameFolder(path, name) {
+  const folder = this.folders.find(item => samePath(item.path, path));
+  if (!folder) return false;
+  folder.name = name;
+  this.changed();
+  return true;
+ }
+
  removeFolder(path) {
   const gone = this.chats.filter(chat => samePath(chat.folder, path));
   this.chats = this.chats.filter(chat => !samePath(chat.folder, path));

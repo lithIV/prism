@@ -9,6 +9,7 @@ const REMOVE = { duration: 320, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 
 const GHOST = { enter: 420, leave: 220, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' };
 const COLLAPSE_TIME = 480;
 const CONFIRM_TIME = 3000;
+const RENAME_MAX = 120;
 const CLOCK = 30000;
 const MINUTE = 60000, HOUR = 60 * MINUTE, DAY = 24 * HOUR, WEEK = 7 * DAY;
 
@@ -140,14 +141,16 @@ class ChatList {
   icon.innerHTML = Glyphs.folder;
   const name = element('span', 'chats-folder-name', folder.name);
   const add = action('chats-folder-action', 'new-chat', Glyphs.plus);
+  const rename = action('chats-folder-action', 'rename-folder', Glyphs.pencil);
   const remove = action('chats-folder-action is-delete', 'delete-folder', Glyphs.trash);
-  head.append(icon, name, add, remove);
+  label(rename, I18n.t('folder.rename'));
+  head.append(icon, name, rename, add, remove);
   const body = element('div', 'chats-folder-body');
   const inner = element('div', 'chats-folder-inner');
   body.inert = collapsed;
   body.append(inner);
   section.append(head, body);
-  const group = { section, head, name, add, remove, body, inner, empty: null, path: folder.path, confirm: false, timer: 0 };
+  const group = { section, head, name, rename, add, remove, body, inner, empty: null, input: null, path: folder.path, confirm: false, timer: 0 };
   section.__group = group;
   return group;
  }
@@ -167,11 +170,13 @@ class ChatList {
   const time = element('span', 'chat-time');
   const actions = element('span', 'chat-actions');
   const lock = action('chat-action is-lock', 'lock', Glyphs.padlock), pin = action('chat-action', 'pin', Glyphs.pin), remove = action('chat-action is-delete', 'delete', Glyphs.trash);
+  const rename = action('chat-action', 'rename', Glyphs.pencil);
+  label(rename, I18n.t('chat.rename'));
   label(remove, I18n.t('chat.delete'));
-  actions.append(lock, pin, remove);
+  actions.append(rename, lock, pin, remove);
   meta.append(time, actions);
   row.append(mark, title, meta);
-  return { row, mark, title, time, lock, pin, remove, ghost: null, pinned: null, guarded: null, locked: null, veil: 0, confirm: false, timer: 0 };
+  return { row, mark, title, time, rename, lock, pin, remove, input: null, ghost: null, pinned: null, guarded: null, locked: null, veil: 0, confirm: false, timer: 0 };
  }
 
  paint(item, chat) {
@@ -206,6 +211,8 @@ class ChatList {
    item.lock.classList.toggle('is-on', guarded);
    label(item.lock, I18n.t(!guarded ? 'chat.lock' : locked ? 'chat.unlock' : 'chat.protected'));
   }
+  // A sealed title can only change while the chat is open, so a locked chat hides the pencil.
+  item.rename.disabled = locked;
   const closing = locked && item.locked === false && !first && !reducedMotion();
   item.guarded = guarded;
   item.locked = locked;
@@ -430,13 +437,17 @@ class ChatList {
  }
 
  onClick(event) {
+  // The rename field swallows its own clicks; they must never open the chat or fold the folder.
+  if (event.target.closest('.rename-input')) return;
   const button = event.target.closest('[data-action]');
   if (button) {
    const id = button.closest('.chat-row')?.dataset.id, group = button.closest('.chats-folder')?.__group;
    if (button.dataset.action === 'new-folder') this.onNewFolder();
    else if (button.dataset.action === 'new-chat') this.newChat(group);
    else if (button.dataset.action === 'delete-folder') this.askDeleteFolder(group);
+   else if (button.dataset.action === 'rename-folder') this.renameFolder(group);
    else if (button.dataset.action === 'pin') this.togglePin(id);
+   else if (button.dataset.action === 'rename') this.renameChat(id);
    else if (button.dataset.action === 'delete') this.askDelete(id);
    else if (button.dataset.action === 'lock') this.onLock?.(id, button.closest('.chat-row'));
    return;
@@ -471,6 +482,60 @@ class ChatList {
  togglePin(id) {
   const chat = this.library.chat(id);
   if (chat) this.library.update(id, { pinned: !chat.pinned });
+ }
+
+ // Renaming happens in place: the title, or the folder's name, turns into a field that keeps on
+ // Enter or a click away and drops on Escape. An emptied field keeps the old name.
+ renameChat(id) {
+  const item = this.rows.get(id), chat = this.library.chat(id);
+  if (!item || !chat || this.library.isLocked(id)) return;
+  this.edit(item, chat.title, value => this.library.update(id, { title: value, named: true }));
+ }
+
+ renameFolder(group) {
+  const folder = group && this.library.folders.find(item => key(item.path) === key(group.path));
+  if (!folder) return;
+  this.edit(group, folder.name, value => this.library.renameFolder(folder.path, value));
+ }
+
+ edit(target, current, commit) {
+  if (target.input) return;
+  const node = target.title || target.name, holder = target.row || target.head;
+  const input = element('input', 'rename-input');
+  input.type = 'text';
+  input.value = current;
+  input.maxLength = RENAME_MAX;
+  input.spellcheck = false;
+  input.setAttribute('aria-label', I18n.t(target.title ? 'chat.rename' : 'folder.rename'));
+  target.input = input;
+  node.hidden = true;
+  node.after(input);
+  holder.draggable = false;
+  holder.classList.add('is-renaming');
+  input.focus({ preventScroll: true });
+  input.select();
+  let done = false;
+  const finish = keep => {
+   if (done) return;
+   done = true;
+   const value = input.value.trim();
+   const rename = keep && value && value !== current;
+   input.remove();
+   node.hidden = false;
+   holder.draggable = true;
+   holder.classList.remove('is-renaming');
+   target.input = null;
+   // The new name shows at once, whether or not the list redraws for it.
+   if (rename) { node.textContent = value; commit(value); }
+  };
+  // The field keeps its own keys and clicks; the list around it must not act on them.
+  input.addEventListener('pointerdown', event => event.stopPropagation());
+  input.addEventListener('keydown', event => {
+   event.stopPropagation();
+   if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+   else if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
  }
 
  askDelete(id) {
