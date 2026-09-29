@@ -52,7 +52,14 @@ let connections = 0;
 const server = createServer((req, res) => {
  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
  const send = (status, body, type) => {
-  res.writeHead(status, { "content-type": type || MIME[extname(url.pathname)] || "application/octet-stream" });
+  // The renderer gets edited by hand while it is being worked on, and a browser holding an old
+  // copy of chat.js or styles.css looks exactly like a change that never happened. Never cache.
+  res.writeHead(status, {
+   "content-type": type || MIME[extname(url.pathname)] || "application/octet-stream",
+   "cache-control": "no-store, no-cache, must-revalidate",
+   "pragma": "no-cache",
+   "expires": "0",
+  });
   res.end(body);
  };
  if (url.pathname === "/ws") { res.writeHead(426); res.end("websocket only"); return; }
