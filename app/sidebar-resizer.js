@@ -40,7 +40,7 @@ class SidebarResizer {
  start(event) {
   if (event.button !== 0) return;
   event.preventDefault();
-  this.handle.setPointerCapture?.(event.pointerId);
+  try { this.handle.setPointerCapture?.(event.pointerId); } catch {}
   document.body.classList.add('is-resizing-sidebar');
   this.sidebar.classList.add('is-resizing');
   const move = next => this.apply(next.clientX);
