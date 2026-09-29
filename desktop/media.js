@@ -3,7 +3,8 @@
 const { BrowserWindow } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { spawn } = require('node:child_process');
+const { pathToFileURL, fileURLToPath } = require('node:url');
 
 const VIEW = { side: 1280, quality: 0.82 };
 const COUNT = { default: 8, view: 24, save: 600 };
@@ -91,7 +92,128 @@ function call(contents, expression, ms, signal) {
  });
 }
 
+// ------------------------------------------------------------ decoding without an Electron window
+// The page above needs a window to draw in, and `prism web` has none: it stands in for Electron
+// with a plain object, so `new BrowserWindow(...)` throws. When that happens ffmpeg/ffprobe do the
+// same job — same shapes, same 1280 px cap, same data URLs. Set PRISM_FFMPEG or PRISM_FFPROBE to
+// point at the binaries if they are not on PATH.
+const TOOLS = {};
+function locate(name) {
+ if (TOOLS[name]) return TOOLS[name];
+ const override = process.env[`PRISM_${name.toUpperCase()}`];
+ if (override && fs.existsSync(override)) return (TOOLS[name] = override);
+ const exts = (process.env.PATHEXT || '.EXE').split(';').filter(Boolean);
+ for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+  if (!dir) continue;
+  for (const ext of ['', ...exts]) {
+   const candidate = path.join(dir, name + ext);
+   try { if (fs.statSync(candidate).isFile()) return (TOOLS[name] = candidate); } catch {}
+  }
+ }
+ return (TOOLS[name] = name);
+}
+
+function tool(name, args, { ms = WAIT.image, signal } = {}) {
+ return new Promise((resolve, reject) => {
+  const child = spawn(locate(name), args, { windowsHide: true });
+  const out = [], err = [];
+  let settled = false;
+  const finish = (error, value) => {
+   if (settled) return;
+   settled = true;
+   clearTimeout(timer);
+   signal?.removeEventListener('abort', onAbort);
+   try { child.kill(); } catch {}
+   if (error) reject(error); else resolve(value);
+  };
+  const onAbort = () => finish(plain('Stopped by the user'));
+  const timer = setTimeout(() => finish(plain('The decoder stopped responding')), ms);
+  if (signal?.aborted) onAbort();
+  else signal?.addEventListener('abort', onAbort, { once: true });
+  child.stdout.on('data', chunk => out.push(chunk));
+  child.stderr.on('data', chunk => err.push(chunk));
+  child.on('error', error => finish(error));
+  child.on('close', code => {
+   if (code === 0) return finish(null, Buffer.concat(out));
+   const said = String(Buffer.concat(err)).trim().split(/\r?\n/).filter(Boolean).at(-1) || 'media 3';
+   finish(Object.assign(plain(said), { media: true }));
+  });
+ });
+}
+
+async function probe(file, ms, signal) {
+ const raw = await tool('ffprobe', ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', file], { ms, signal });
+ const data = JSON.parse(String(raw)) || {};
+ const streams = data.streams || [];
+ const video = streams.find(stream => stream.codec_type === 'video') || {};
+ const seconds = Number(data.format?.duration ?? video.duration);
+ return {
+  width: Number(video.width) || 0,
+  height: Number(video.height) || 0,
+  duration: Number.isFinite(seconds) ? seconds : 0,
+  audio: streams.some(stream => stream.codec_type === 'audio'),
+ };
+}
+
+// One frame as bytes: webp downscaled into a side-wide box, or the untouched full-size png.
+function draw(file, { at, side, quality = VIEW.quality, png = false, ms, signal }) {
+ const args = ['-v', 'error', '-nostdin'];
+ if (at !== undefined) args.push('-ss', String(at));
+ args.push('-i', file, '-frames:v', '1');
+ if (png) args.push('-c:v', 'png', '-f', 'image2pipe', 'pipe:1');
+ else args.push(
+  '-vf', `scale='min(${side},iw)':'min(${side},ih)':force_original_aspect_ratio=decrease`,
+  '-c:v', 'libwebp', '-quality', String(Math.round(quality * 100)), '-f', 'webp', 'pipe:1');
+ return tool('ffmpeg', args, { ms, signal });
+}
+
+function ffmpegRun(signal) {
+ let opened = '';
+ // Stopping is the user's doing, not a broken file: never dress it up as a media error.
+ const stopped = error => error.message === 'Stopped by the user' || error.message === 'The decoder stopped responding';
+ return async (name, args, ms) => {
+  if (name === 'open') {
+   opened = fileURLToPath(args[0]);
+   const info = await probe(opened, ms, signal)
+    .catch(error => {
+     if (stopped(error)) throw error;
+     throw Object.assign(plain('media 4'), { media: true, cause: error });
+    });
+   if (!info.width) throw Object.assign(plain('media 3'), { media: true });
+   return info;
+  }
+  if (name === 'image') {
+   const file = fileURLToPath(args[0]);
+   const [side, quality] = args.slice(1);
+   try {
+    const info = await probe(file, ms, signal);
+    if (!info.width) throw plain('image');
+    const bytes = await draw(file, { side, quality, ms, signal });
+    return { width: info.width, height: info.height, url: `data:image/webp;base64,${bytes.toString('base64')}` };
+   } catch (error) {
+    if (stopped(error)) throw error;
+    throw Object.assign(plain('image'), { media: true, cause: error });
+   }
+  }
+  if (name === 'frame') {
+   const [at, side, quality, full] = args;
+   try {
+    const out = { time: at, view: null, full: null };
+    if (side) out.view = `data:image/webp;base64,${(await draw(opened, { at, side, quality, ms, signal })).toString('base64')}`;
+    if (full) out.full = `data:image/png;base64,${(await draw(opened, { at, png: true, ms, signal })).toString('base64')}`;
+    return out;
+   } catch (error) {
+    if (stopped(error)) throw error;
+    throw Object.assign(plain('media 3'), { media: true, cause: error });
+   }
+  }
+  throw Object.assign(plain('media 4'), { media: true });
+ };
+}
+
 async function withPage(signal, work) {
+ // No Electron means no canvas window; ffmpeg stands in and answers the same calls.
+ if (typeof BrowserWindow !== 'function') return work(ffmpegRun(signal));
  const win = new BrowserWindow({
   show: false,
   width: 64,
