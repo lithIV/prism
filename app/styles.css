@@ -855,7 +855,14 @@ body {
 
 .sidebar-footer {
   display: flex;
+  align-items: center;
+  gap: 4px;
   margin-top: auto;
+  min-width: 0;
+}
+
+.sidebar-settings {
+  flex: none;
 }
 
 /* The handle on the sidebar's right edge; its hairline shows on hover or while dragging. */
@@ -8511,12 +8518,12 @@ h6.md-h {
 
 
 /* Prism: instruction file pill and menu */
-.composer-instructions{anchor-name:--instructions;display:flex;align-items:center;gap:7px;height:32px;max-width:190px;padding:0 13px 0 10px;border:0;border-radius:16px;outline:none;background:var(--composer-bg);box-shadow:inset 0 0 0 1px var(--composer-border),0 8px 24px rgba(0,0,0,.25);color:var(--fg-primary);font:inherit;font-size:var(--small-font-size);line-height:1;cursor:pointer;white-space:nowrap;overflow:hidden}
+.composer-instructions{anchor-name:--instructions;display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;height:var(--icon-button-size,32px);padding:0 12px 0 5px;border:0;border-radius:calc(var(--icon-button-size,32px)/2);outline:none;background:transparent;color:rgb(var(--icon-rgb,255,255,255));font:inherit;font-size:var(--sidebar-font-size,14px);line-height:1;text-align:left;cursor:pointer;white-space:nowrap;opacity:.6;transition:opacity .2s ease}
 .composer-instructions[hidden]{display:none}
-.composer-instructions .glyph{flex:none;width:15px;height:15px;color:rgba(var(--fg-rgb),.62);transition:color .2s ease}
-.composer-instructions:hover{background:var(--control-hover-bg)}
-.composer-instructions:hover .glyph{color:rgba(var(--fg-rgb),.9)}
-.composer-instructions.is-on{box-shadow:inset 0 0 0 1px rgba(var(--fg-rgb),.2),0 8px 24px rgba(0,0,0,.25)}
+.composer-instructions .glyph{flex:none;width:16px;height:16px;overflow:visible}
+.composer-instructions:hover,.composer-instructions:focus-visible{opacity:.9}
+.composer-instructions:focus-visible{box-shadow:0 0 0 2px var(--focus-ring)}
+.composer-instructions.is-on{opacity:1}
 .composer-instructions-text{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .instructions-menu{position:fixed;position-anchor:--instructions;position-area:top span-left;position-try-fallbacks:flip-block;inset:auto;margin:0 0 10px;padding:8px;width:280px;max-height:340px;overflow-y:auto;background:var(--composer-bg);border:0;border-radius:14px;box-shadow:inset 0 0 0 1px var(--composer-border),0 18px 48px rgba(0,0,0,.45);color:rgba(var(--fg-rgb),.85)}
 .instructions-head{padding:4px 8px 8px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-tertiary)}
@@ -8538,8 +8545,10 @@ h6.md-h {
 .memory-text{font-size:13.5px;color:rgba(var(--fg-rgb),.88);line-height:1.5;white-space:normal;overflow-wrap:anywhere}
 .memory-when{margin-top:3px;font-size:11px;color:var(--fg-tertiary);font-family:var(--mono-font)}
 .memory-row .memory-remove{flex:none}
-.memory-add-row{display:flex;gap:8px;align-items:center}
+/* The add field is pinned to the top of the page, so it is there whatever the list does. */
+.memory-add-row{position:sticky;top:0;z-index:2;display:flex;gap:8px;align-items:center;padding:10px 0;background:var(--chat-bg)}
 .memory-add-row .memory-input{flex:1}
+.settings-about-page .about-row{align-items:center}
 
 
 /* Prism: attachments the agent writes (preview / download) */

@@ -312,9 +312,15 @@ class Settings {
   if (!node || !window.openghost?.memory) return;
   let memories = [];
   try { memories = (await window.openghost.memory.list()) || []; } catch {}
-  // Oldest first: a memory the user adds here lands at the bottom, right above the field.
+  // Oldest first: a memory the user adds here lands at the bottom of the list.
   memories.sort((a, b) => (a.created || 0) - (b.created || 0));
-  node.innerHTML = `<div class="memory-list">${memories.length
+  // The field stays pinned at the top of the page, so adding one more never needs a scroll.
+  node.innerHTML = `<div class="memory-add-row">
+   <input class="settings-key memory-input" placeholder="${escapeHtml(I18n.t('settings.memory.placeholder'))}" spellcheck="false">
+   <button type="button" class="settings-button is-primary" data-memory-add>${escapeHtml(I18n.t('settings.memory.add'))}</button>
+  </div>
+  <p class="settings-status" data-provider="memory" role="status"></p>
+  <div class="memory-list">${memories.length
    ? memories.map(item => `<div class="memory-row" data-id="${escapeHtml(item.id)}">
       <div class="memory-body">
        <div class="memory-text">${escapeHtml(item.text)}</div>
@@ -322,18 +328,14 @@ class Settings {
       </div>
       <button type="button" class="settings-button memory-remove" title="${escapeHtml(I18n.t('settings.memory.remove'))}">${escapeHtml(I18n.t('settings.memory.remove'))}</button>
      </div>`).join('')
-   : `<div class="settings-mcp-empty">${escapeHtml(I18n.t('settings.memory.empty'))}</div>`}</div>
-  <div class="memory-add-row">
-   <input class="settings-key memory-input" placeholder="${escapeHtml(I18n.t('settings.memory.placeholder'))}" spellcheck="false">
-   <button type="button" class="settings-button is-primary" data-memory-add>${escapeHtml(I18n.t('settings.memory.add'))}</button>
-  </div>
-  <p class="settings-status" data-provider="memory" role="status"></p>`;
+   : `<div class="settings-mcp-empty">${escapeHtml(I18n.t('settings.memory.empty'))}</div>`}</div>`;
   const add = async () => {
    const input = node.querySelector('.memory-input');
    const text = input?.value.trim();
    if (!text) return;
    await window.openghost?.memory?.add(text);
    await this.paintMemory();
+   this.dialog.querySelector('.settings-memory-page .memory-input')?.focus();
   };
   node.querySelector('[data-memory-add]')?.addEventListener('click', add);
   node.querySelector('.memory-input')?.addEventListener('keydown', event => {
@@ -362,7 +364,7 @@ class Settings {
      <p class="settings-hint">${escapeHtml(I18n.t('settings.about.line'))}</p>
     </span>
    </div>
-   ${updatable ? `<div class="settings-row">
+   ${updatable ? `<div class="settings-row about-row">
     <div class="settings-text">
      <span class="settings-label">${escapeHtml(I18n.t('settings.about.updates'))}</span>
      <p class="settings-hint">${escapeHtml(I18n.t('settings.about.updatesHint'))}</p>
@@ -371,7 +373,7 @@ class Settings {
      <button type="button" class="settings-button is-primary" data-about-check>${escapeHtml(I18n.t('settings.about.check'))}</button>
     </div>
    </div>` : ''}
-   <div class="settings-row">
+   <div class="settings-row about-row">
     <div class="settings-text">
      <span class="settings-label">${escapeHtml(I18n.t('settings.about.repo'))}</span>
      <p class="settings-hint">${escapeHtml(I18n.t('settings.about.repoHint'))}</p>
