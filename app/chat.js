@@ -1360,6 +1360,20 @@ class Chat {
     } catch {}
    }
   }
+  // Pictures from tools ride in their own user step, so a chat reloaded from disk has to put
+  // them back under the cards instead of losing them the moment the page refreshes.
+  const pictures = [];
+  for (const step of entry.steps || []) {
+   if (!Array.isArray(step.content)) continue;
+   let label = '';
+   for (const part of step.content) {
+    if (part.type === 'image_url' && part.image_url?.url) {
+     pictures.push({ url: part.image_url.url, name: label, note: '' });
+     label = '';
+    } else if (part.type === 'text' && part.text && part.text !== TOOL_NOTES.images) label = part.text;
+   }
+  }
+  if (pictures.length) el.append(new MediaSlider(pictures).el);
   el.__entry = entry;
   if (last) el.append(this.toolbar());
   return el;
