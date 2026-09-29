@@ -1408,12 +1408,18 @@ ghost-thinking {
   color: rgba(var(--fg-rgb), 0.55);
 }
 
+/* Own messages keep a little room under the bubble for the hover actions. The row sits inside
+   that room: a message paints with containment (content-visibility: auto, for long chats),
+   which clips anything hanging outside its box — a row below the box would never be seen. */
+.message.is-user {
+  padding-bottom: 32px;
+}
+
 .message.is-user .message-tools {
   position: absolute;
-  top: 100%;
+  bottom: 2px;
   right: 0;
   margin: 0;
-  padding-top: 2px;
   opacity: 0;
   animation: none;
   transition: opacity 0.2s ease;
@@ -5399,7 +5405,8 @@ h6.md-h {
 }
 
 /* While a piece of a reply is selected the composer steps back with the feed, with the same blur and dimming as the veil. */
-.is-veiled > .composer {
+.is-veiled > .composer,
+.is-veiled > .composer-tags {
   filter: blur(5px) brightness(0.78) contrast(0.949);
   transition:
     margin-top var(--motion-duration) var(--motion-easing),
@@ -6648,6 +6655,9 @@ h6.md-h {
 }
 
 .settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 34px;
   padding: 0 16px;
   border: 0;
@@ -6661,6 +6671,10 @@ h6.md-h {
   white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.2s var(--motion-easing);
+}
+
+a.settings-button {
+  text-decoration: none;
 }
 
 .settings-button:hover {
