@@ -167,7 +167,10 @@ app.addEventListener('click', event => {
   if (event.target === app && narrowScreen()) setSidebarCollapsed(true);
 });
 sidebar.addEventListener('click', event => {
-  if (narrowScreen() && event.target.closest('.chat-row, .sidebar-new-chat')) setSidebarCollapsed(true);
+  if (!narrowScreen()) return;
+  // A row's own buttons and the rename field act in place; only opening a chat puts the sidebar away.
+  if (event.target.closest('[data-action], .rename-input')) return;
+  if (event.target.closest('.chat-row, .sidebar-new-chat')) setSidebarCollapsed(true);
 });
 
 sidebarToggle.addEventListener('sidebar-toggle', () => {
