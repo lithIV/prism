@@ -1035,6 +1035,17 @@ class Chat {
    }
    const output = await AgentTools.run(name, args, { id, cwd });
    card?.setResult(typeof output === 'string' ? output : output?.text);
+   // Pictures a tool brought back belong in the chat too, not only in the model's context:
+   // a screenshot or a look at a file should simply appear, with no link to copy.
+   if (output && typeof output === 'object' && output.images?.length) {
+    const pictures = output.images.map((picture, n) => ({
+     url: picture.url,
+     name: picture.label || `Picture ${n + 1}`,
+     note: '',
+    }));
+    view.el.append(new MediaSlider(pictures).el);
+    if (conv === this.active) this.followBottom();
+   }
    // A written or edited file becomes an attachment under the message: preview, download.
    if (!conv.subagent && (name === 'write_file' || name === 'edit_file') && String(typeof output === 'string' ? output : output?.text).slice(0, 6) !== 'Error:') {
     try { window.Artifacts?.attach(view.el, { path: args.path, cwd }); } catch {}

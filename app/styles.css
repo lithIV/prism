@@ -8257,7 +8257,7 @@ h6.md-h {
 .mcp-status.is-error{color:#e08f8f}
 
 /* Prism: token status under the composer */
-.composer-status{display:flex;justify-content:center;gap:10px;margin:-6px auto 6px;width:min(var(--composer-max-width),100% - 2 * var(--composer-side-gap));font-size:11px;color:rgba(255,255,255,.32);pointer-events:none}
+.composer-status{display:flex;justify-content:center;gap:10px;margin:-6px auto 6px;width:min(var(--composer-max-width),100% - 2 * var(--composer-side-gap));font-size:11px;color:var(--fg-secondary);pointer-events:none}
 .composer-status-tokens{white-space:nowrap}
 
 
