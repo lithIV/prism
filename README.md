@@ -160,7 +160,7 @@ Produces an NSIS setup under `dist/`.
 ## Notice
 
 This is a modified fork of OpenGhost. The OpenGhost **code** is MIT (see LICENSE);
-the name, ghost logo, animations and visual design remain Andrew's and are used here
+the name, ghost logo, animations and visual design are used here
 only under the license's non-commercial allowance. Internal identifiers
 (`window.openghost` bridge, storage prefixes, the OpenAI `originator` header) keep
 their original names so the upstream engines keep working.
