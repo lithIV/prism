@@ -59,6 +59,9 @@ class SelectionFocus {
   const thread = box.closest('.thread'), list = box.closest('.thread-list');
   if (!thread || !list) { this.hide(); return; }
   this.range = range;
+  // The cut-out follows the whole message, not the words: the bubble's rounded corners then
+  // share the sharpness of its sides, and the blue wash alone marks what was picked.
+  this.message = box.closest('.message') || box;
   if (this.veil && this.thread === thread && this.list === list) {
    if (this.draw()) this.pick(box);
    return;
@@ -131,16 +134,15 @@ class SelectionFocus {
   this.frame = requestAnimationFrame(() => this.draw());
  }
 
- // Measures the selection against the veil and cuts it out: every band is a soft-edged hole in the mask.
+ // Measures the message holding the selection against the veil and cuts it out as one soft card.
  draw() {
-  const veil = this.veil, list = this.list, range = this.range;
-  if (!veil || !range) return false;
+  const veil = this.veil, list = this.list, target = this.message;
+  if (!veil || !target) return false;
   veil.style.top = px(list.offsetTop);
   veil.style.height = px(list.offsetHeight);
   const origin = veil.getBoundingClientRect();
-  const rects = [...range.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0)
-   .map(rect => ({ left: rect.left - origin.left, right: rect.right - origin.left, top: rect.top - origin.top, bottom: rect.bottom - origin.top }));
-  if (!rects.length) { this.hide(); return false; }
+  const box = target.getBoundingClientRect();
+  if (!box.width || !box.height) { this.hide(); return false; }
   const images = ['linear-gradient(#000 0 0)'], sizes = ['100% 100%'], places = ['0 0'], ops = ['subtract'];
   const cut = (image, x, y, width, height) => {
    images.push(image);
@@ -148,13 +150,14 @@ class SelectionFocus {
    places.push(`${px(x)} ${px(y)}`);
    ops.push('add');
   };
-  for (const line of bands(rects)) {
-   const x = line.left - PAD.x - FEATHER.x, width = line.right - line.left + 2 * (PAD.x + FEATHER.x);
-   const top = line.top - (line.joinedTop ? 0 : PAD.y), bottom = line.bottom + (line.joinedBottom ? 0 : PAD.y);
-   cut(BAND, x, top, width, bottom - top);
-   if (!line.joinedTop) cut(RISE, x + FEATHER.x, top - FEATHER.y, width - 2 * FEATHER.x, FEATHER.y);
-   if (!line.joinedBottom) cut(FALL, x + FEATHER.x, bottom, width - 2 * FEATHER.x, FEATHER.y);
-  }
+  const left = box.left - origin.left, top = box.top - origin.top;
+  const x = left - PAD.x - FEATHER.x, width = box.width + 2 * (PAD.x + FEATHER.x);
+  const y = top - PAD.y, height = box.height + 2 * PAD.y;
+  cut(BAND, x, y, width, height);
+  // The top and bottom fades span the whole card: where their side edges land, the band gradient
+  // has already faded to nothing, so the corners come out as soft as the sides.
+  cut(RISE, x, y - FEATHER.y, width, FEATHER.y);
+  cut(FALL, x, y + height, width, FEATHER.y);
   Object.assign(veil.style, {
    maskImage: images.join(', '),
    maskSize: sizes.join(', '),

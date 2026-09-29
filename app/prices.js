@@ -7,6 +7,9 @@
 
 const TABLE = {
  'deepseek-flash': { in: 0.27, cached: 0.07, out: 1.1 },
+ 'deepseek-v4.1-flash': { in: 0.27, cached: 0.07, out: 1.1 },
+ 'deepseek-v4-flash': { in: 0.27, cached: 0.07, out: 1.1 },
+ 'deepseek-v4-flash-vision-exp': { in: 0.27, cached: 0.07, out: 1.1 },
  'deepseek-v4-pro': { in: 0.55, cached: 0.14, out: 2.19 },
 };
 
@@ -18,9 +21,14 @@ const read = () => {
  }
 };
 
+// Model ids carry their provider as a prefix (opencode-go:deepseek-flash), so the bare name is
+// looked up too.
+const bare = id => String(id || '').replace(/^[a-z0-9-]+:/i, '');
+
 window.Prices = {
  of(id) {
-  const entry = read()[id];
+  const table = read();
+  const entry = table[id] || table[bare(id)];
   return entry && Number.isFinite(entry.in) && Number.isFinite(entry.out) ? entry : null;
  },
  // What a chat's collected usage costs at those rates, or null when the model has no prices.
