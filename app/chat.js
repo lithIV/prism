@@ -21,6 +21,14 @@ const CONTEXT = { reserve: 0.1, chars: 3.2, image: 1200 };
 // How long the world around the agent (MCP tools, instruction files, skills) is kept before
 // it is read again: long enough to keep long chats quick, short enough to follow edits.
 const WORLD_TTL = 10000;
+// A finished turn's length, spelled short: 47s · 2m 05s · 1h 04m 12s.
+const spell = seconds => {
+ if (seconds < 60) return `${seconds}s`;
+ const pad = value => String(value).padStart(2, '0');
+ const minutes = Math.floor(seconds / 60), rest = seconds % 60;
+ if (minutes < 60) return `${minutes}m ${pad(rest)}s`;
+ return `${Math.floor(minutes / 60)}h ${pad(minutes % 60)}m ${pad(rest)}s`;
+};
 const COMPACT = {
  prompt: 'You compress a long conversation between a user and Prism, an AI agent working on the user\'s computer, so the work can go on without the original messages. Write a dense summary in the language the user writes in, with these parts: the user\'s goals and preferences; key facts, decisions and constraints; what has been done, with file paths, commands and their results, commits; the current state and open problems; the exact next steps. Keep names, paths, numbers, versions and code identifiers exact. Leave out small talk and whatever no longer matters.',
  head: 'The earlier part of this conversation was compacted to save context. Your tools, formatting rules and browser instructions still apply; this summary does not replace them. Summary of it:',
@@ -476,9 +484,10 @@ class Chat {
  }
 
  load(conv) {
-  return this.library.conversation(conv.id).then(({ messages, tokens }) => {
+  return this.library.conversation(conv.id).then(({ messages, tokens, spend }) => {
    conv.messages = messages;
    conv.tokens = tokens;
+   conv.spend = spend || null;
    this.restore(conv);
   });
  }
@@ -837,7 +846,7 @@ class Chat {
 
  begin(conv, config) {
   const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-  return conv.turn = { id, controller: new AbortController(), config, part: null, parts: [], next: null, queue: [], approvals: new Set(), tool: '', text: false };
+  return conv.turn = { id, controller: new AbortController(), config, started: Date.now(), part: null, parts: [], next: null, queue: [], approvals: new Set(), tool: '', text: false };
  }
 
  run(conv, prompt, config, bubble) {
@@ -975,7 +984,7 @@ class Chat {
  context() {
   const conv = this.active, record = conv?.record;
   const folder = record ? this.library.folders.find(item => samePath(item.path, record.folder)) || { path: record.folder, name: '' } : conv?.folder || null;
-  return { messages: conv ? snapshot(conv.messages) : [], tokens: conv?.tokens || 0, cache: conv?.cache || null, folder, model: this.modelOf(conv) };
+  return { messages: conv ? snapshot(conv.messages) : [], tokens: conv?.tokens || 0, cache: conv?.cache || null, spend: conv?.spend || null, folder, model: this.modelOf(conv) };
  }
 
  history(conv) {
@@ -1033,6 +1042,11 @@ class Chat {
    const read = Number(details.cached_tokens ?? usage.prompt_cache_hit_tokens ?? 0) || 0;
    const write = Number(details.cache_creation_input_tokens ?? details.cache_write_tokens ?? 0) || 0;
    if (read || write) conv.cache = { read: (conv.cache?.read || 0) + read, write: (conv.cache?.write || 0) + write };
+   // What the chat has spent so far, for the ~$ readout under the composer.
+   conv.spend ||= { input: 0, cached: 0, output: 0 };
+   conv.spend.input += Number(usage.prompt_tokens || 0) || 0;
+   conv.spend.output += Number(usage.completion_tokens || 0) || 0;
+   conv.spend.cached += read;
   }
   const calls = part.entry.steps.at(-1).tool_calls || [];
   if (calls.length) this.showGhost(turn.next || view);
@@ -1149,6 +1163,7 @@ class Chat {
   this.dismissGhost(view);
   if (!entry.steps.length && !entry.content) drop(conv.messages, entry);
   view.thinking?.finish();
+  if (view.thinking?.elapsed && !entry.thinkingMs) entry.thinkingMs = Math.round(view.thinking.elapsed);
   view.stream.finish().then(() => {
    view.el.classList.remove('is-streaming');
    if (!entry.content.trim()) collapse(view.el);
@@ -1158,6 +1173,8 @@ class Chat {
  async end(conv, turn, error, finish) {
   if (conv.turn !== turn) return;
   const { view, entry } = turn.part, aborted = error?.name === 'AbortError';
+  // How long the whole turn took, kept on the entry so the row can show it again after a reload.
+  if (turn.started) entry.duration = Math.max(1, Math.round((Date.now() - turn.started) / 1000));
   for (const pending of turn.approvals) pending.card.settle('deny');
   conv.turn = null;
   if (turn.switch && this.library.chat(conv.id)) {
@@ -1207,7 +1224,7 @@ class Chat {
   else noted = false;
   const last = text ? view : turn.parts.findLast(item => item.entry.content.trim() && item.view.el.isConnected)?.view;
   if (last) {
-   const tools = this.toolbar(), box = last === view && view.el.querySelector('.message-error, .message-note');
+   const tools = this.toolbar('assistant', entry.duration || 0), box = last === view && view.el.querySelector('.message-error, .message-note');
    if (box) box.before(tools);
    else last.el.append(tools);
   }
@@ -1293,7 +1310,7 @@ class Chat {
 
  save(conv) {
   if (!this.library.chat(conv.id)) return;
-  this.library.saveMessages(conv.id, conv.messages, conv.tokens);
+  this.library.saveMessages(conv.id, conv.messages, conv.tokens, conv.spend || null);
   this.library.update(conv.id, { updated: Date.now() });
  }
 
@@ -1382,6 +1399,7 @@ class Chat {
   if (entry.thinking) {
    const thinking = new ThinkingView();
    thinking.write(entry.thinking, false);
+   thinking.setTime(entry.thinkingMs);
    el.insertBefore(thinking.el, content);
   }
   const cwd = conv?.record?.folder || '';
@@ -1425,13 +1443,13 @@ class Chat {
   }
   if (pictures.length) el.append(new MediaSlider(pictures).el);
   el.__entry = entry;
-  if (last) el.append(this.toolbar());
+  if (last) el.append(this.toolbar('assistant', entry.duration || 0));
   return el;
  }
 
  // The row under a message: Copy everywhere, Steer on your own words (rewind and edit the
- // prompt), and Ask / Mini chat under replies, so the actions never need a drag-selection.
- toolbar(kind = 'assistant') {
+ // prompt), Ask / Mini chat under replies, and how long the turn took beside them.
+ toolbar(kind = 'assistant', seconds = 0) {
   const tools = document.createElement('div');
   tools.className = 'message-tools';
   const copy = document.createElement('button');
@@ -1454,6 +1472,13 @@ class Chat {
     const message = button.closest('.message');
     if (message) MiniChat.open({ settings: this.settings, source: this, quote: this.copyText(message) });
    }));
+   if (seconds > 0) {
+    const time = document.createElement('span');
+    time.className = 'message-when';
+    time.title = I18n.t('message.durationHint');
+    time.textContent = spell(seconds);
+    tools.append(time);
+   }
   }
   return tools;
  }

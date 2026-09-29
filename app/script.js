@@ -112,7 +112,9 @@ document.querySelector('.titlebar-name').innerHTML = `${Glyphs.ghost}<span>Prism
    const percent = windowSize ? Math.min(100, Math.round((tokens / windowSize) * 100)) : 0;
    const cache = context.cache;
    const cached = cache && cache.read + cache.write > 0 ? ` · cache ${human(cache.read)} read${cache.write ? ` / ${human(cache.write)} write` : ''}` : '';
-   node.textContent = tokens ? `${human(tokens)} / ${human(windowSize)} tokens · ${percent}% · ${context.messages.length} messages${cached}` : '';
+   const cost = window.Prices?.cost(context.model, context.spend);
+   const spent = cost != null && cost > 0 ? ` · ~${Prices.format(cost)}` : '';
+   node.textContent = tokens ? `${human(tokens)} / ${human(windowSize)} tokens · ${percent}% · ${context.messages.length} messages${cached}${spent}` : '';
   } catch {}
  }, 1500);
 }

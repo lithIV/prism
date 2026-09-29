@@ -21,6 +21,8 @@ const ICONS = {
  stop: svg('<path d="M46 46l28 28M74 46 46 74"/>'),
  plus: svg('<path d="M60 44v32M44 60h32"/>'),
  close: svg('<path d="M50 50l20 20M70 50 50 70"/>'),
+ sound: svg('<path d="M49 52h8l10-8v32l-10-8h-8z"/><path d="M73 51a13 13 0 0 1 0 18"/><path d="M79 45a22 22 0 0 1 0 30"/>'),
+ muted: svg('<path d="M49 52h8l10-8v32l-10-8h-8z"/><path d="M72 52l14 16M86 52 72 68"/>'),
  external: svg('<path d="M65 40h15v15M80 40 58 62"/><path d="M73 67v8a5 5 0 0 1-5 5H45a5 5 0 0 1-5-5V52a5 5 0 0 1 5-5h8"/>'),
 };
 
@@ -67,6 +69,7 @@ class BrowserPanel {
   this.accounts = read(ACCOUNTS) || [];
   const saved = read(STORE) || {};
   this.width = saved.width || 0;
+  this.muted = saved.muted === true;
   this.build();
   for (const item of (saved.tabs || []).filter(entry => entry.url !== 'prism://runs').slice(0, TABS_MAX)) this.addTab(item.url || '', { title: item.title || '' });
   this.select(this.tabs[saved.active] || this.tabs[0] || null, { lazy: true });
@@ -104,6 +107,7 @@ class BrowserPanel {
       <input class="browser-url" type="text" spellcheck="false" autocomplete="off" placeholder="${I18n.t('browser.address')}" aria-label="${I18n.t('browser.address')}">
       <span class="browser-url-view" aria-hidden="true"></span>
      </label>
+     <button type="button" class="browser-icon browser-mute" aria-label="${I18n.t('browser.mute')}">${ICONS.sound}</button>
      <button type="button" class="browser-icon browser-external" aria-label="${I18n.t('browser.external')}">${ICONS.external}</button>
     </div>
     <div class="browser-stage">
@@ -141,6 +145,9 @@ class BrowserPanel {
    if (view.isLoading()) view.stop(); else view.reload();
   });
   $('.browser-external').addEventListener('click', () => { if (!blank(this.active?.url)) window.open(this.active.url, '_blank'); });
+  this.muteButton = $('.browser-mute');
+  this.muteButton.addEventListener('click', () => this.setMuted(!this.muted));
+  this.paintMute();
   $('.browser-error .browser-pill').addEventListener('click', () => { this.active.error = ''; this.active.view?.reload(); this.render(); });
   $('.browser-take').addEventListener('click', () => this.take());
   $('.browser-user .browser-pill').addEventListener('click', () => this.handBack());
@@ -236,6 +243,7 @@ class BrowserPanel {
   tab.ready = new Promise(resolve => {
    view.addEventListener('dom-ready', () => {
     tab.id = view.getWebContentsId();
+    try { view.setAudioMuted(this.muted); } catch {}
     this.report();
     resolve(tab);
    }, { once: true });
@@ -364,9 +372,33 @@ class BrowserPanel {
   write(STORE, {
    open: this.open,
    width: this.width,
+   muted: this.muted,
    tabs: pages.map(tab => ({ url: tab.url, title: tab.title })),
    active: Math.max(0, pages.indexOf(this.active)),
   });
+ }
+
+ // Sound off in every tab; the choice is kept for the next launch.
+ setMuted(muted) {
+  this.muted = !!muted;
+  this.applyMute();
+  this.paintMute();
+  this.save();
+ }
+
+ applyMute() {
+  for (const tab of this.tabs) {
+   try { tab.view?.setAudioMuted(this.muted); } catch {}
+  }
+ }
+
+ paintMute() {
+  if (!this.muteButton) return;
+  const label = I18n.t(this.muted ? 'browser.unmute' : 'browser.mute');
+  this.muteButton.innerHTML = this.muted ? ICONS.muted : ICONS.sound;
+  this.muteButton.setAttribute('aria-label', label);
+  this.muteButton.title = label;
+  this.muteButton.classList.toggle('is-on', this.muted);
  }
 
  // A tab that shows a plain element instead of a page (the parallel runs list).
@@ -386,6 +418,11 @@ class BrowserPanel {
 
  onEvent(data) {
   const from = this.tabs.find(tab => tab.id === data.id);
+  // When the agent works in a tab, the panel comes forward by itself: watching it is the point.
+  if ((data.type === 'pointer' || data.type === 'key' || data.type === 'open') && !this.open) {
+   if (from && data.type !== 'open') this.select(from);
+   this.setOpen(true);
+  }
   if (data.type === 'open') this.newTab(data.url, { after: from, background: data.background });
   else if (data.type === 'key') {
    if (data.action === 'address') this.url.focus();

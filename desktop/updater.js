@@ -11,6 +11,16 @@ const REPO = 'lithIV/prism';
 const DELAY = 3500;      // let the window settle before the question
 const TIMEOUT = 12000;
 
+// Settings → About keeps "Check for updates at launch" in the store; unset means on.
+const settingFile = () => path.join(app.getPath('userData'), 'store', 'update.json');
+function autoEnabled() {
+ try {
+  return JSON.parse(fs.readFileSync(settingFile(), 'utf8'))?.auto !== false;
+ } catch {
+  return true;
+ }
+}
+
 const parts = text => String(text).replace(/^v/i, '').split('.').map(part => parseInt(part, 10) || 0);
 const isNewer = (a, b) => {
  const x = parts(a), y = parts(b);
@@ -103,6 +113,7 @@ async function prompt(win, info) {
 // Runs in the background; a failed check is only a quiet line in the log.
 function start() {
  if (!app.isPackaged && !process.env.PRISM_UPDATE_TEST_VERSION) return;
+ if (!autoEnabled()) return;
  setTimeout(() => {
   check().then(async info => {
    if (!info) return;

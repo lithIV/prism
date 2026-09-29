@@ -60,21 +60,35 @@ class WelcomeGhost {
   this.root.classList.replace('is-shown', 'is-flying');
   status.classList.add('is-arriving');
   for (const animation of status.getAnimations()) animation.finish();
-  const from = this.flight.getBoundingClientRect(), to = status.querySelector('ghost-thinking').getBoundingClientRect();
-  const dx = to.left + to.width / 2 - (from.left + from.width / 2), dy = to.top + to.height / 2 - (from.top + from.height / 2);
-  const timing = { duration: FLIGHT.duration, fill: 'forwards' }, len = Math.hypot(dx, dy) || 1;
-  ghost.look(dx / len * EYES.x, dy / len * EYES.up, FLIGHT.duration);
-  const flight = this.root.animate({ translate: ['0 0', `${dx}px 0`] }, { ...timing, easing: FLIGHT.x });
-  this.flight.animate({ translate: ['0 0', `0 ${dy}px`] }, { ...timing, easing: FLIGHT.y });
-  this.flight.animate({ scale: [1, to.width / from.width] }, { ...timing, easing: FLIGHT.scale });
-  this.flight.animate({ rotate: ['0deg', `${Math.sign(dx) * FLIGHT.tilt}deg`, '0deg'], offset: [0, 0.4, 1] }, { duration: FLIGHT.duration, easing: 'ease-in-out' });
-  flight.finished.then(() => {
+  const from = this.flight.getBoundingClientRect();
+  const start = { x: from.left + from.width / 2, y: from.top + from.height / 2, size: from.width || 1 };
+  const begun = performance.now();
+  // The reply is still settling while the ghost flies, so the landing spot is read every frame:
+  // aiming at where the status stood on the first frame lands the ghost somewhere else — the
+  // teleport it used to do — while following it lands exactly on the mark.
+  const tick = now => {
    if (generation !== this.generation) return;
+   const t = Math.min(1, (now - begun) / FLIGHT.duration);
+   const mark = status.querySelector('ghost-thinking');
+   const to = mark ? mark.getBoundingClientRect() : null;
+   const live = to && to.width ? to : null;
+   const ease = power => 1 - Math.pow(1 - t, power);
+   const dx = live ? (live.left + live.width / 2 - start.x) * ease(3) : 0;
+   const dy = live ? (live.top + live.height / 2 - start.y) * (t * t * (3 - 2 * t)) : 0;
+   const scale = live ? (start.size + (live.width - start.size) * ease(3)) / start.size : 1;
+   this.root.style.translate = `${dx}px 0`;
+   this.flight.style.translate = `0 ${dy}px`;
+   this.flight.style.scale = String(scale);
+   this.flight.style.rotate = `${Math.sign(dx || 1) * FLIGHT.tilt * Math.sin(Math.PI * t)}deg`;
+   if (t < 1) { requestAnimationFrame(tick); return; }
    status.classList.remove('is-arriving');
-   return this.root.animate({ opacity: [1, 0] }, HANDOFF).finished.then(() => {
+   const len = Math.hypot(dx, dy) || 1;
+   ghost.look(dx / len * EYES.x, dy / len * EYES.up, HANDOFF.duration);
+   this.root.animate({ opacity: [1, 0] }, HANDOFF).finished.then(() => {
     if (generation === this.generation) this.reset();
-   });
-  }).catch(() => {});
+   }).catch(() => {});
+  };
+  requestAnimationFrame(tick);
  }
 
  status() {
@@ -86,6 +100,10 @@ class WelcomeGhost {
   this.generation++;
   clearTimeout(this.timer);
   for (const animation of this.root.getAnimations({ subtree: true })) animation.cancel();
+  this.root.style.translate = '';
+  this.flight.style.translate = '';
+  this.flight.style.scale = '';
+  this.flight.style.rotate = '';
   for (const status of this.main.querySelectorAll('.message-status.is-arriving')) status.classList.remove('is-arriving');
   this.root.classList.remove('is-shown', 'is-leaving', 'is-flying');
   this.ghost?.remove();

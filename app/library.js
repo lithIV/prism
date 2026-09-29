@@ -213,14 +213,14 @@ class Library {
  async conversation(id) {
   const data = await this.store.read(`chats/${id}`).catch(() => null);
   const body = data?.sealed ? await ChatLock.open(this.keys.get(id), data.sealed) : data;
-  return { messages: Array.isArray(body?.messages) ? body.messages : [], tokens: Number(body?.tokens) || 0 };
+  return { messages: Array.isArray(body?.messages) ? body.messages : [], tokens: Number(body?.tokens) || 0, spend: body?.spend || null };
  }
 
  // A protected chat is sealed with the key it has when the save is asked for, so locking right after a reply loses nothing.
- saveMessages(id, messages, tokens = 0) {
+ saveMessages(id, messages, tokens = 0, spend = null) {
   const chat = this.chat(id), key = chat?.lock ? this.keys.get(id) : null;
   if (!chat || (chat.lock && !key)) return Promise.resolve();
-  const body = { messages, tokens };
+  const body = { messages, tokens, ...(spend ? { spend } : {}) };
   return this.queue(id, async () => this.store.write(`chats/${id}`, key ? { version: 1, sealed: await ChatLock.seal(key, body) } : { version: 1, ...body }));
  }
 

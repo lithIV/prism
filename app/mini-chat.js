@@ -16,6 +16,8 @@ function memoryLibrary() {
  return {
   folders: [],
   chats,
+  // The chat code waits on this before reopening the last conversation; the mini chat never restores.
+  ready: Promise.resolve(),
   chat: id => chats.find(chat => chat.id === id) || null,
   create({ folder }) {
    const now = Date.now(), chat = { id: `mini-${now.toString(36)}`, title: '', folder: folder?.path || '', created: now, updated: now, pinned: false, named: true };

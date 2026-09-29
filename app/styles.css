@@ -65,7 +65,7 @@
   --scrollbar-hover-width: 6px;
   --scrollbar-hit-width: 12px;
 
-  --composer-max-width: clamp(680px, 44vw, 900px);
+  --composer-max-width: clamp(680px, 50vw, 1280px);
   --composer-side-gap: 24px;
   --composer-bottom-gap: 16px;
   --composer-radius: 24px;
@@ -1373,6 +1373,15 @@ ghost-thinking {
   margin-top: 6px;
 }
 
+/* How long the turn took, beside the actions under a reply. */
+.message-when {
+  align-self: center;
+  margin-left: 4px;
+  font-family: var(--mono-font);
+  font-size: 11px;
+  color: rgba(var(--fg-rgb), 0.32);
+}
+
 /* The actions under a message: small icon buttons beside the copy button, each with a hint. */
 .message-tool {
   display: grid;
@@ -1709,9 +1718,9 @@ ghost-thinking {
   background: rgba(var(--selection-rgb), var(--selection-alpha));
 }
 
-/* Once the rest of the feed is blurred, the wash behind the picked words fades away: their sharpness alone marks them. */
+/* The picked words keep their blue wash: that wash, made brighter, is what marks them once the feed is blurred. */
 .select-held {
-  --selection-alpha: 0;
+  --selection-alpha: 0.42;
   transition: --selection-alpha 0.45s ease;
 }
 
@@ -1722,8 +1731,8 @@ ghost-thinking {
   z-index: 1;
   right: 0;
   left: 0;
-  -webkit-backdrop-filter: blur(5px) brightness(0.78) contrast(0.949);
-  backdrop-filter: blur(5px) brightness(0.78) contrast(0.949);
+  -webkit-backdrop-filter: blur(4px) brightness(0.85) contrast(0.97);
+  backdrop-filter: blur(4px) brightness(0.85) contrast(0.97);
   pointer-events: none;
   user-select: none;
 }
@@ -1803,7 +1812,9 @@ ghost-thinking {
   background: rgba(var(--fg-rgb), 0.08);
 }
 
-.select-menu-button .glyph {
+.select-menu-button .glyph,
+.select-menu-button .md-copy-icon {
+  flex: none;
   width: 14px;
   height: 14px;
   overflow: visible;
@@ -2586,15 +2597,22 @@ h6.md-h {
 }
 
 .md-check-icon,
-.md-copy.is-copied .md-copy-icon {
+.md-copy.is-copied .md-copy-icon,
+.select-menu-button.is-copied .md-copy-icon {
   opacity: 0;
   transform: scale(0.5);
 }
 
-.md-copy.is-copied .md-check-icon {
+.md-copy.is-copied .md-check-icon,
+.select-menu-button.is-copied .md-check-icon {
   opacity: 1;
   transform: none;
   color: rgb(var(--success-rgb));
+}
+
+.select-menu-button .md-copy-icon,
+.select-menu-button .md-check-icon {
+  transition: opacity 0.15s ease, transform 0.2s var(--motion-easing);
 }
 
 .md-code pre {
@@ -5407,7 +5425,7 @@ h6.md-h {
 /* While a piece of a reply is selected the composer steps back with the feed, with the same blur and dimming as the veil. */
 .is-veiled > .composer,
 .is-veiled > .composer-tags {
-  filter: blur(5px) brightness(0.78) contrast(0.949);
+  filter: blur(4px) brightness(0.85) contrast(0.97);
   transition:
     margin-top var(--motion-duration) var(--motion-easing),
     margin-bottom var(--motion-duration) var(--motion-easing),
@@ -5419,13 +5437,12 @@ h6.md-h {
   margin-bottom: 0;
 }
 
-/* The folder pill and the instructions pill sit at the left edge of the chat area,
-   just above the composer (the script keeps --composer-top in step with it). */
+/* The folder pill sits on the composer's top-left corner, like a label on the chat box. */
 .composer-tags {
   position: absolute;
   z-index: 2;
-  left: 14px;
-  bottom: calc(var(--composer-top, 140px) + 12px);
+  left: 2px;
+  bottom: calc(100% + 12px);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8432,6 +8449,10 @@ a.settings-button {
 .message-thinking.is-extended .message-thinking-head{display:none}
 .message-thinking.is-extended .message-thinking-body{grid-template-rows:1fr;opacity:1}
 .message-thinking.is-extended .message-thinking-inner{max-height:none;overflow:visible}
+/* The clock beside the Thought row: how long the thinking has run. */
+.message-thinking-time{margin-left:2px;font-family:var(--mono-font);font-size:11px;color:rgba(var(--fg-rgb),.4)}
+.message-thinking-time[hidden]{display:none}
+.message-thinking.is-extended .message-thinking-time{display:block;margin:8px 0 0;text-align:right}
 
 
 /* Prism: tool bodies use the app's thin scrollbar, like code blocks do */
@@ -8744,3 +8765,6 @@ body.has-lightbox{overflow:hidden}
 .about-name{display:flex;align-items:baseline;gap:9px;color:var(--fg-primary);font-size:19px;font-weight:650;letter-spacing:-.01em}
 .about-version{color:var(--fg-tertiary);font-family:var(--mono-font);font-size:12px;font-weight:500}
 .about-fine{margin:16px 0 0;max-width:560px}
+
+/* Prism: the browser panel's mute switch */
+.browser-mute.is-on{color:rgb(var(--warn-rgb,255,180,96))}

@@ -5,13 +5,14 @@
 // The veil lives inside the scrolled feed and the selection is cut out of it, so scrolling moves both together with no work per frame.
 const VEIL = [
  { backdropFilter: 'blur(0px) brightness(1) contrast(1)' },
- { backdropFilter: 'blur(5px) brightness(0.78) contrast(0.949)' },
+ { backdropFilter: 'blur(4px) brightness(0.85) contrast(0.97)' },
 ];
 const IN = { duration: 520, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' };
 const OUT = { duration: 420, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
 const PAD = { x: 2, y: 3 };
-// Sideways the blur eases in over several letters; up and down the fade stays within the gap between lines, so a neighbouring line never shows through.
-const FEATHER = { x: 56, y: 5 };
+// Sideways the blur eases in over several letters; up and down it reaches into the lines above and
+// below, so the cut-out reads as a soft-edged highlight rather than a hard hole in the blur.
+const FEATHER = { x: 72, y: 18 };
 const JOIN = 16;
 const STEPS = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 

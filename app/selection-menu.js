@@ -23,10 +23,12 @@ class SelectionMenu {
   const el = this.el = document.createElement('div');
   el.className = 'select-menu';
   el.setAttribute('role', 'toolbar');
-  el.innerHTML = `<button type="button" class="select-menu-button" data-action="steer" hidden>${Glyphs.pencil}<span>${I18n.t('select.steer')}</span></button>`
+  el.innerHTML = `<button type="button" class="select-menu-button" data-action="copy">${Markdown.COPY_ICON}<span>${I18n.t('select.copy')}</span></button>`
+   + `<button type="button" class="select-menu-button" data-action="steer" hidden>${Glyphs.pencil}<span>${I18n.t('select.steer')}</span></button>`
    + `<button type="button" class="select-menu-button" data-action="ask">${Glyphs.quote}<span>${I18n.t('select.ask')}</span></button>`
    + `<span class="select-menu-divider" aria-hidden="true"></span>`
    + `<button type="button" class="select-menu-button" data-action="mini">${Glyphs.bubble}<span>${I18n.t('select.mini')}</span></button>`;
+  this.copy = el.querySelector('[data-action="copy"]');
   this.steer = el.querySelector('[data-action="steer"]');
   this.ask = el.querySelector('[data-action="ask"]');
   this.mini = el.querySelector('[data-action="mini"]');
@@ -129,7 +131,7 @@ class SelectionMenu {
   this.range = range;
   this.box = box;
   this.text = text;
-  // Own prompts offer Steer (edit and rerun from here); replies offer Ask and Mini chat.
+  // Own prompts offer Steer (edit and rerun from here); replies offer Ask and Mini chat. Copy is always there.
   const own = !!box.closest('.message.is-user');
   const inDialog = !!box.closest('dialog');
   this.steer.hidden = !own;
@@ -168,10 +170,25 @@ class SelectionMenu {
   this.focus.hide();
  }
 
+ async copyText(button) {
+  try {
+   await navigator.clipboard.writeText(this.text);
+  } catch {
+   return;
+  }
+  button.classList.add('is-copied');
+  clearTimeout(button.copiedTimer);
+  button.copiedTimer = setTimeout(() => button.classList.remove('is-copied'), 1400);
+ }
+
  onClick(event) {
   const button = event.target.closest('[data-action]');
   if (!button || !this.box) return;
   const { text, box } = this;
+  if (button.dataset.action === 'copy') {
+   this.copyText(button);
+   return;
+  }
   this.hide();
   document.getSelection().removeAllRanges();
   if (button.dataset.action === 'ask') this.onAsk(text, box);

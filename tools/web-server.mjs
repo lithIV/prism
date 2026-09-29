@@ -113,9 +113,18 @@ wss.on("connection", ws => {
 
 server.listen(PORT, HOST, () => {
  const shown = HOST === "0.0.0.0" ? "localhost" : HOST;
- console.log(`\n  Prism web  ->  http://${shown}:${server.address().port}`);
+ const port = server.address().port;
+ console.log(`\n  Prism web  ->  http://${shown}:${port}`);
  console.log(`  store      ->  ${USER_DATA}`);
- if (HOST === "0.0.0.0") console.log("  note: reachable from your network; anyone on it can run tools on this computer.");
+ const addresses = lanAddresses();
+ if (HOST === "0.0.0.0") {
+  for (const address of addresses) console.log(`  on your network  ->  http://${address}:${port}   (open this on your phone)`);
+  if (!addresses.length) console.log("  note: no network address found — only this computer can reach it right now.");
+  console.log("  note: reachable from your network; anyone on it can run tools on this computer.");
+ } else if (addresses.length) {
+  console.log(`  from your phone  ->  start with  prism web --host 0.0.0.0`);
+  console.log(`                        then open  http://${addresses[0]}:${port}  on a phone on the same Wi-Fi`);
+ }
  console.log("  the terminal stays like this: requests, models and tools show up below.\n");
  if (OPEN) {
   const url = `http://localhost:${server.address().port}`;
