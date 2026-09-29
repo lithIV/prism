@@ -153,10 +153,10 @@ class SelectionFocus {
    const x = line.left - PAD.x - FEATHER.x, width = line.right - line.left + 2 * (PAD.x + FEATHER.x);
    const top = line.top - (line.joinedTop ? 0 : PAD.y), bottom = line.bottom + (line.joinedBottom ? 0 : PAD.y);
    cut(BAND, x, top, width, bottom - top);
-   // The fades span the band's whole width: where their side edges land, the band gradient has
-   // already faded to nothing, so the four corners come out as soft as the sides.
-   if (!line.joinedTop) cut(RISE, x, top - FEATHER.y, width, FEATHER.y);
-   if (!line.joinedBottom) cut(FALL, x, bottom, width, FEATHER.y);
+   // The fades sit over the band's solid middle, their side edges 2px from the text: out in the
+   // feathered ends the band is nearly transparent anyway, and there they used to show as seams.
+   if (!line.joinedTop) cut(RISE, x + FEATHER.x, top - FEATHER.y, width - 2 * FEATHER.x, FEATHER.y);
+   if (!line.joinedBottom) cut(FALL, x + FEATHER.x, bottom, width - 2 * FEATHER.x, FEATHER.y);
   }
   Object.assign(veil.style, {
    maskImage: images.join(', '),
