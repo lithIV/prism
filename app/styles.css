@@ -8571,3 +8571,30 @@ body.has-lightbox{overflow:hidden}
 .lightbox-zoom{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.75);background:rgba(255,255,255,.08);padding:4px 10px;border-radius:999px}
 .lightbox-zoom:empty{display:none}
 .media-card{cursor:zoom-in}
+
+
+/* Phones: a lens filter is a displacement map the GPU has to read back on every frame, and it
+   sits here on a button that is on screen the whole time you are reading. The flat fill and a
+   small plain blur keep the look; the displacement is what costs. Overlays that come and go
+   keep their blur, just smaller. */
+@media (max-width: 820px) {
+  .glass-lens,
+  .thread-bottom,
+  .dg-tools,
+  .composer-effort {
+    -webkit-backdrop-filter: blur(2px) saturate(1.4);
+    backdrop-filter: blur(2px) saturate(1.4);
+  }
+
+  .lightbox {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+
+  /* A gentle nudge away from blurring half the screen on a phone. */
+  .model-veil,
+  .browser-user {
+    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+    backdrop-filter: blur(10px) saturate(1.1);
+  }
+}
